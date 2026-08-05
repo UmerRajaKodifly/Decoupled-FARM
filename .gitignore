@@ -1,5 +1,6 @@
 models/
 work/
+outputs/
 /third_party/FARM-Project
 /third_party/ss-3dgs
 /third_party/dl_depth_v1

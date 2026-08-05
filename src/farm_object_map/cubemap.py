@@ -12,6 +12,7 @@ from pathlib import Path
 
 import pycolmap
 
+from .gpu_verify import capture_process_logs, parse_ba_gpu_log
 from .paths import ensure_ss3dgs_on_path
 
 logger = logging.getLogger(__name__)
@@ -158,23 +159,31 @@ def run_panorama_sfm(
     )
 
     ba_backend = params["sfm"]["ba_backend"]
-    logger.info("Panorama SfM mapping (ba_backend=%s)", ba_backend)
-    colmap_sfm.run_mapping(
-        database_path,
-        face_image_dir,
-        sparse_dir,
-        sfm_mapper=params["sfm"]["mapper"],
-        ba_backend=ba_backend,
-        incremental_pipeline_options=colmap_sfm.build_panorama_incremental_pipeline_options(
-            ba_backend=ba_backend
-        ),
-        global_pipeline_options=colmap_sfm.build_panorama_global_pipeline_options(
-            ba_backend=ba_backend
-        ),
-        calibrate_view_graph_before_global=True,
-    )
+    gpu_index = str(params["sfm"]["gpu_index"])
+    logger.info("Panorama SfM mapping (ba_backend=%s gpu_index=%s)", ba_backend, gpu_index)
+    ba_log = workspace / "logs" / "bundle_adjustment.log"
+    with capture_process_logs(ba_log, "utils.colmap_sfm", "utils"):
+        colmap_sfm.run_mapping(
+            database_path,
+            face_image_dir,
+            sparse_dir,
+            sfm_mapper=params["sfm"]["mapper"],
+            ba_backend=ba_backend,
+            incremental_pipeline_options=colmap_sfm.build_panorama_incremental_pipeline_options(
+                ba_backend=ba_backend
+            ),
+            global_pipeline_options=colmap_sfm.build_panorama_global_pipeline_options(
+                ba_backend=ba_backend
+            ),
+            calibrate_view_graph_before_global=True,
+        )
     colmap_sfm.export_model(sparse_dir / "0")
     model_path = sparse_dir / "0"
     if not (model_path / "cameras.bin").exists() and not (model_path / "cameras.txt").exists():
         raise RuntimeError(f"Panorama SfM produced no model at {model_path}")
+    ba_text = ba_log.read_text(encoding="utf-8") if ba_log.exists() else ""
+    (workspace / "logs" / "ba_gpu_report.json").write_text(
+        __import__("json").dumps(parse_ba_gpu_log(ba_text, requested_gpu_index=gpu_index), indent=2),
+        encoding="utf-8",
+    )
     return model_path

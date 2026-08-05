@@ -188,6 +188,7 @@ def _export_scene_state_objects(scene_state: dict, out_dir: Path, class_names: l
             "object_id": oid,
             "label": label,
             "mean": mean.tolist(),
+            "cov": cov.tolist(),
             "num_voxels": int(ijk.shape[0]),
             "voxel_size": voxel_size,
             "path": str(path),
@@ -198,7 +199,11 @@ def _export_scene_state_objects(scene_state: dict, out_dir: Path, class_names: l
 
 
 def _detections_from_seg(seg: dict, names: list[str]) -> list[Detection]:
-    masks = seg.get("masks") or []
+    masks = seg.get("masks")
+    if masks is None:
+        masks = []
+    elif isinstance(masks, torch.Tensor) and masks.numel() == 0:
+        return []
     boxes = seg.get("boxes")
     scores = seg.get("scores")
     class_ids = seg.get("class_ids")
@@ -352,6 +357,10 @@ def run_farm_association_mapping(
         },
         "low_depth_masks": sum(1 for s in drop_log if s.get("skipped_few_points")),
         "avg_valid_depth_pixels": float(np.mean([s["valid_depth_pixels"] for s in drop_log] or [0])),
+        "avg_valid_points_per_object_per_view": float(
+            np.mean([s["valid_depth_pixels"] for s in drop_log if not s.get("skipped_few_points")] or [0])
+        ),
+        "n_object_views": sum(1 for s in drop_log if not s.get("skipped_few_points")),
         "objects": summaries,
     }
     (out_dir / "summary.json").write_text(json.dumps(summary, indent=2))

@@ -48,9 +48,30 @@ export SCENE_GRAPH_MODEL_DIR=/path/to/FARM-Project/models
 Optional: `COLMAP_ROOT` pointing at a 4.1+Caspar install (otherwise whatever
 `colmap` is on `PATH`).
 
+## Depth sources
+
+Default / primary is **`dl`** (`dl_depth_v1`). COLMAP MVS is an **explicit
+alternate** comparison flow only — it is never the default.
+
+```bash
+# primary (fails closed if DL is missing)
+python -m farm_object_map e2e --video clip.mp4 --work work/run_dl --depth-source dl
+
+# alternate comparison flow (same downstream mapping)
+python -m farm_object_map e2e \
+  --video clip.mp4 \
+  --outputs-root outputs \
+  --depth-source colmap_mvs \
+  --gpu-index 0
+# writes outputs/<video_stem>/colmap_mvs/  (and .../dl/ for the primary flow)
+```
+
+MVS writes `units: "sfm"` DepthMap npz under `depth_npz/`. DL stays `units: "m"`.
+
 ## Depth drop-in (`dl_depth_v1`)
 
-Not deployed yet. Mapping **stops** rather than falling back to MVS.
+Not deployed yet. Mapping **stops** rather than falling back to MVS unless you
+pass `--depth-source colmap_mvs`.
 
 When ready, any one of:
 

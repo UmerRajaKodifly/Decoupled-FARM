@@ -13,7 +13,8 @@ import cv2
 import numpy as np
 
 from .cloud import ply_to_cloud_npz
-from .colmap_dense import ColmapMvsDepthSource, undistort_and_mvs
+from .colmap_dense import ColmapMvsDepthSource, export_mvs_depth_npz, undistort_and_mvs
+from .compare_flows import compare_object_summaries
 from .cubemap import (
     DEFAULT_RENDER_TYPE,
     render_cubemap_faces,
@@ -24,6 +25,7 @@ from .depth import probe_dl_depth_v1
 from .detect import YOLOEDetector, ensure_yoloe_checkpoint
 from .dl_depth_v1 import build_dl_depth_v1_source, npz_dir_depth_source
 from .frames import extract_frames, probe_video
+from .gpu_verify import probe_colmap_build
 from .mapper import map_detections_to_objects, reproject_mean_into_mask, save_object
 from .poses import FramePose, export_frame_poses, save_poses_json, verify_pose_convention
 from .sfm import export_sparse_cloud, run_sfm
@@ -106,10 +108,15 @@ def build_parser() -> argparse.ArgumentParser:
     poses.add_argument("--model", required=True)
     poses.add_argument("--out", required=True)
 
-    dense = sub.add_parser("dense-depth", help="COLMAP MVS placeholder depth (not used when DL is preferred).")
+    dense = sub.add_parser(
+        "dense-depth",
+        help="Explicit COLMAP MVS alternate depth (not the default mapping source).",
+    )
     dense.add_argument("--images", required=True)
     dense.add_argument("--model", required=True)
     dense.add_argument("--dense-workspace", required=True)
+    dense.add_argument("--gpu-index", default="0")
+    dense.add_argument("--npz-out", default=None, help="Write DepthMap .npz files here.")
 
     cloud = sub.add_parser("export-cloud", help="Sparse COLMAP PLY → cloud.npz (viz only).")
     cloud.add_argument("--model", required=True)
@@ -129,8 +136,14 @@ def build_parser() -> argparse.ArgumentParser:
     mapping.add_argument("--poses", required=True, help="poses.json from export-poses")
     mapping.add_argument("--out", required=True)
     mapping.add_argument("--association", choices=("farm", "greedy_iou"), default="farm")
+    mapping.add_argument(
+        "--depth-source",
+        choices=("dl", "colmap_mvs"),
+        default="dl",
+        help="dl is the primary/default source. colmap_mvs is an explicit alternate flow.",
+    )
     mapping.add_argument("--vocab-json", default=str(DEFAULT_SPATIALGPT_VOCAB))
-    mapping.add_argument("--dense-workspace", default=None, help="Only for greedy_iou + MVS placeholder.")
+    mapping.add_argument("--dense-workspace", default=None, help="Required when --depth-source colmap_mvs.")
     mapping.add_argument("--classes", nargs="*", default=None)
     mapping.add_argument("--prompt-free", action="store_true")
     mapping.add_argument("--yoloe-model", default="yoloe-v8l-seg.pt")
@@ -152,7 +165,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     e2e = sub.add_parser("e2e", help="Phase 1→4 on one video (stops if DL depth is missing).")
     e2e.add_argument("--video", required=True)
-    e2e.add_argument("--work", required=True)
+    e2e.add_argument("--work", default=None, help="Run directory. Optional when --outputs-root is set.")
     e2e.add_argument("--fps", type=float, default=DEFAULT_EXTRACT_FPS)
     e2e.add_argument("--max-frames", type=int, default=None)
     e2e.add_argument("--duration-s", type=float, default=None)
@@ -160,6 +173,19 @@ def build_parser() -> argparse.ArgumentParser:
     e2e.add_argument("--params", default=str(DEFAULT_SS3DGS_PARAMS))
     e2e.add_argument("--association", choices=("farm", "greedy_iou"), default="farm")
     e2e.add_argument("--no-dino", action="store_true")
+    e2e.add_argument(
+        "--depth-source",
+        choices=("dl", "colmap_mvs"),
+        default="dl",
+        help="Primary default is dl. Use colmap_mvs only for the explicit comparison flow.",
+    )
+    e2e.add_argument("--gpu-index", default="0", help="GPU index for Caspar BA logs + patch_match_stereo.")
+    e2e.add_argument(
+        "--outputs-root",
+        default=None,
+        help="If set, work dir becomes <outputs-root>/<video_stem>/<depth-source>/.",
+    )
+    e2e.add_argument("--reuse-sfm", action="store_true", help="Reuse work/sfm/sparse/0 when present.")
     e2e.add_argument("--allow-mvs-fallback", action="store_true")
     e2e.add_argument(
         "--image-type",
@@ -171,6 +197,12 @@ def build_parser() -> argparse.ArgumentParser:
     e2e.add_argument("--dl-depth-npz-dir", default=None)
 
     dl = sub.add_parser("check-dl-depth", help="Report whether dl_depth_v1 is deployable.")
+
+    cmp_ = sub.add_parser("compare-flows", help="Diff dl vs colmap_mvs object summaries.")
+    cmp_.add_argument("--dl-summary", required=True)
+    cmp_.add_argument("--mvs-summary", required=True)
+    cmp_.add_argument("--out", required=True)
+    cmp_.add_argument("--max-mean-dist", type=float, default=2.0)
     return p
 
 
@@ -221,16 +253,37 @@ def _run_smoke_yoloe(args) -> int:
     return 0 if result["n_masks"] > 0 else 3
 
 
+def _video_stem(path: str | Path) -> str:
+    stem = Path(path).stem
+    cleaned = "".join(ch if ch.isalnum() or ch in "-_" else "_" for ch in stem)
+    return "_".join(part for part in cleaned.split("_") if part)
+
+
 def _resolve_depth_source(args, image_dir: Path):
+    """Select a DepthSource. Downstream mapping only sees depth_for_frame()."""
+    requested = getattr(args, "depth_source", "dl")
     loader = _load_image(image_dir)
+    if requested == "colmap_mvs":
+        if not getattr(args, "dense_workspace", None):
+            return None, {"error": "colmap_mvs_requires_dense_workspace"}
+        return ColmapMvsDepthSource(args.dense_workspace), {
+            "source": "colmap_mvs",
+            "units": "sfm",
+            "dense_workspace": args.dense_workspace,
+        }
     if getattr(args, "dl_depth_npz_dir", None):
-        return npz_dir_depth_source(args.dl_depth_npz_dir), {"source": "dl_depth_v1_npz_dir"}
+        return npz_dir_depth_source(args.dl_depth_npz_dir), {"source": "dl_depth_v1_npz_dir", "units": "m"}
     live = build_dl_depth_v1_source(image_loader=loader)
     if live is not None:
-        return live, {"source": "dl_depth_v1_infer"}
+        return live, {"source": "dl_depth_v1_infer", "units": "m"}
     probe = probe_dl_depth_v1()
     if getattr(args, "allow_mvs_fallback", False) and getattr(args, "dense_workspace", None):
-        return ColmapMvsDepthSource(args.dense_workspace), {"source": "colmap_mvs_opt_in", "probe": probe}
+        logger.warning("Using --allow-mvs-fallback; prefer explicit --depth-source colmap_mvs")
+        return ColmapMvsDepthSource(args.dense_workspace), {
+            "source": "colmap_mvs_opt_in_fallback",
+            "units": "sfm",
+            "probe": probe,
+        }
     return None, {"error": "dl_depth_v1_missing", **probe}
 
 
@@ -243,6 +296,14 @@ def _run_map_objects(args) -> int:
     if depth_source is None:
         print(json.dumps(depth_meta, indent=2))
         return 3
+    if hasattr(depth_source, "has_depth"):
+        kept = [f for f in frames if depth_source.has_depth(f.frame_name)]
+        depth_meta["frames_with_depth"] = len(kept)
+        depth_meta["frames_skipped_no_depth"] = len(frames) - len(kept)
+        if not kept:
+            print(json.dumps({"error": "no_frames_with_depth", **depth_meta}, indent=2))
+            return 3
+        frames = kept
     (out / "depth_source.json").write_text(json.dumps(depth_meta, indent=2))
 
     if args.association == "farm":
@@ -328,6 +389,12 @@ def _run_map_objects(args) -> int:
 
 
 def _run_e2e(args) -> int:
+    if getattr(args, "outputs_root", None):
+        args.work = str(Path(args.outputs_root) / _video_stem(args.video) / args.depth_source)
+        logger.info("outputs-root layout → work=%s", args.work)
+    if not args.work:
+        print("ERROR: pass --work or --outputs-root", file=sys.stderr)
+        return 2
     work = Path(args.work)
     work.mkdir(parents=True, exist_ok=True)
     report = {
@@ -335,6 +402,9 @@ def _run_e2e(args) -> int:
         "fps_source": "configs/ss3dgs_sfm_only.yaml general.extract_fps (default 2.0)",
         "video": args.video,
         "video_probe": probe_video(args.video),
+        "depth_source_requested": args.depth_source,
+        "gpu_index": str(args.gpu_index),
+        "colmap_build": probe_colmap_build(),
         "dl_depth": probe_dl_depth_v1(),
         "phases": {},
     }
@@ -399,8 +469,13 @@ def _run_e2e(args) -> int:
         (work / "e2e_report.json").write_text(json.dumps(report, indent=2))
 
     sfm_ws = work / "sfm"
+    cached_model = sfm_ws / "sparse" / "0"
+    reused_sfm = bool(getattr(args, "reuse_sfm", False) and (cached_model / "cameras.bin").exists())
     try:
-        if args.image_type == "panorama":
+        if reused_sfm:
+            model = cached_model
+            logger.info("Reusing cached SfM model %s", model)
+        elif args.image_type == "panorama":
             model = run_panorama_sfm(
                 sfm_image_dir,
                 sfm_ws,
@@ -414,11 +489,15 @@ def _run_e2e(args) -> int:
         verify = verify_pose_convention(model)
         frames = export_frame_poses(model)
         save_poses_json(frames, poses_path)
+        ba_report_path = sfm_ws / "logs" / "ba_gpu_report.json"
         report["phases"]["sfm"] = {
             "model": str(model),
             "n_registered": len(frames),
             "verify": verify,
             "poses": str(poses_path),
+            "reused": reused_sfm,
+            "ba_gpu": json.loads(ba_report_path.read_text()) if ba_report_path.exists() else None,
+            "ba_log": str(sfm_ws / "logs" / "bundle_adjustment.log"),
         }
     except Exception as exc:
         report["phases"]["sfm"] = {"error": repr(exc)}
@@ -430,13 +509,15 @@ def _run_e2e(args) -> int:
     live_depth = build_dl_depth_v1_source(image_loader=_load_image(sfm_image_dir))
     npz_depth = args.dl_depth_npz_dir
     depth_ready = live_depth is not None or bool(npz_depth)
-    if not depth_ready and not args.allow_mvs_fallback:
+    explicit_mvs = args.depth_source == "colmap_mvs"
+    if not explicit_mvs and not depth_ready and not args.allow_mvs_fallback:
         report["phases"]["depth"] = {
             "status": "blocked",
             "reason": report["dl_depth"]["blocker"],
             "drop_in": (
                 "Register infer via farm_object_map.dl_depth_v1.register_infer_fn "
-                "or FARM_DL_DEPTH_INFER=module:fn, or pass --dl-depth-npz-dir"
+                "or FARM_DL_DEPTH_INFER=module:fn, or pass --dl-depth-npz-dir. "
+                "For the comparison flow use --depth-source colmap_mvs."
             ),
         }
         report["phases"]["map"] = {
@@ -449,23 +530,52 @@ def _run_e2e(args) -> int:
 
     dense_ws = None
     map_images = str(sfm_image_dir)
-    if depth_ready:
+    map_poses = work / "poses.json"
+    if explicit_mvs or (not depth_ready and args.allow_mvs_fallback):
+        dense_ws = work / "dense"
+        mvs_report = undistort_and_mvs(
+            sfm_image_dir,
+            model,
+            dense_ws,
+            gpu_index=args.gpu_index,
+        )
+        npz_dir = work / "depth_npz"
+        npz_paths = export_mvs_depth_npz(dense_ws, npz_dir)
+        undist_model = dense_ws / "sparse"
+        if (undist_model / "cameras.bin").exists() or (undist_model / "cameras.txt").exists():
+            verify_u = verify_pose_convention(undist_model)
+            frames_u = export_frame_poses(undist_model)
+            map_poses = work / "poses_undistorted.json"
+            save_poses_json(frames_u, map_poses)
+            report["phases"]["poses_undistorted"] = {
+                "n_frames": len(frames_u),
+                "verify": verify_u,
+                "poses": str(map_poses),
+            }
+        if (dense_ws / "images").is_dir():
+            map_images = str(dense_ws / "images")
+        report["phases"]["depth"] = {
+            "status": "colmap_mvs",
+            "units": "sfm",
+            "dense_workspace": str(dense_ws),
+            "depth_npz_dir": str(npz_dir),
+            "n_depth_npz": len(npz_paths),
+            "mvs": mvs_report,
+        }
+    else:
         report["phases"]["depth"] = {
             "status": "dl_depth_v1",
+            "units": "m",
             "npz_dir": npz_depth,
             "live_infer": live_depth is not None,
         }
-    else:
-        dense_ws = work / "dense"
-        undistort_and_mvs(sfm_image_dir, model, dense_ws)
-        report["phases"]["depth"] = {"status": "colmap_mvs_opt_in", "dense_workspace": str(dense_ws)}
-        if (dense_ws / "images").is_dir():
-            map_images = str(dense_ws / "images")
+    (work / "e2e_report.json").write_text(json.dumps(report, indent=2))
     map_ns = argparse.Namespace(
         images=map_images,
-        poses=str(work / "poses.json"),
+        poses=str(map_poses),
         out=str(work / "objects"),
         association=args.association,
+        depth_source="colmap_mvs" if dense_ws is not None else "dl",
         vocab_json=args.vocab_json,
         dense_workspace=str(dense_ws) if dense_ws else None,
         classes=None,
@@ -477,7 +587,7 @@ def _run_e2e(args) -> int:
         conf=0.25,
         no_dino=args.no_dino,
         allow_mvs_fallback=bool(args.allow_mvs_fallback),
-        dl_depth_npz_dir=npz_depth,
+        dl_depth_npz_dir=None if dense_ws is not None else npz_depth,
     )
     rc = _run_map_objects(map_ns)
     report["phases"]["map"] = {"status": "ran", "returncode": rc, "out": str(work / "objects")}
@@ -563,8 +673,15 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if report["ok"] else 2
 
     if args.cmd == "dense-depth":
-        undistort_and_mvs(args.images, args.model, args.dense_workspace)
-        print(json.dumps({"dense_workspace": args.dense_workspace}, indent=2))
+        report = undistort_and_mvs(
+            args.images,
+            args.model,
+            args.dense_workspace,
+            gpu_index=args.gpu_index,
+        )
+        npz_out = args.npz_out or str(Path(args.dense_workspace) / "depth_npz")
+        written = export_mvs_depth_npz(args.dense_workspace, npz_out)
+        print(json.dumps({"dense_workspace": args.dense_workspace, "n_npz": len(written), "mvs": report}, indent=2))
         return 0
 
     if args.cmd == "export-cloud":
@@ -590,6 +707,16 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "check-dl-depth":
         print(json.dumps(probe_dl_depth_v1(), indent=2))
+        return 0
+
+    if args.cmd == "compare-flows":
+        diff = compare_object_summaries(
+            args.dl_summary,
+            args.mvs_summary,
+            max_mean_dist=args.max_mean_dist,
+        )
+        Path(args.out).write_text(json.dumps(diff, indent=2))
+        print(json.dumps(diff, indent=2))
         return 0
 
     return 1
