@@ -110,6 +110,26 @@ python -m farm_object_map e2e \
 
 FPS default is **2.0** (`configs/ss3dgs_sfm_only.yaml`).
 
+## Visualize results
+
+```bash
+source env.sh
+python -m farm_object_map view-objects \
+  --objects-dir outputs/export_video_2/colmap_mvs/objects \
+  --port 8080
+```
+
+Open http://127.0.0.1:8080 — voxel clouds + Gaussian means/ellipsoids, colored by object.
+
+2D masks/thumbnails (if present): `objects/image_store/` and `objects/image_store_masks/`.
+
+FARM’s own viewer needs `scene_state.pt` (saved on newer mapping runs):
+
+```bash
+python third_party/FARM-Project/scripts/view_scene_state.py \
+  --pt outputs/export_video_2/colmap_mvs/objects/scene_state.pt
+```
+
 ## Association
 
 - `--association farm` (default): FARM modules, DINO via `resolve_dino_backbone()`

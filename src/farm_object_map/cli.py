@@ -203,6 +203,16 @@ def build_parser() -> argparse.ArgumentParser:
     cmp_.add_argument("--mvs-summary", required=True)
     cmp_.add_argument("--out", required=True)
     cmp_.add_argument("--max-mean-dist", type=float, default=2.0)
+
+    view = sub.add_parser("view-objects", help="Open a viser browser view of exported object npzs.")
+    view.add_argument(
+        "--objects-dir",
+        required=True,
+        help="Directory containing object_*.npz, or the parent that has objects/summary.json.",
+    )
+    view.add_argument("--host", default="0.0.0.0")
+    view.add_argument("--port", type=int, default=8080)
+    view.add_argument("--background-cloud", default=None, help="Optional cloud.npz (e.g. SfM sparse).")
     return p
 
 
@@ -717,6 +727,17 @@ def main(argv: list[str] | None = None) -> int:
         )
         Path(args.out).write_text(json.dumps(diff, indent=2))
         print(json.dumps(diff, indent=2))
+        return 0
+
+    if args.cmd == "view-objects":
+        from .view_objects import serve
+
+        serve(
+            args.objects_dir,
+            host=args.host,
+            port=args.port,
+            background_cloud=args.background_cloud,
+        )
         return 0
 
     return 1

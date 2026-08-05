@@ -328,6 +328,12 @@ def run_farm_association_mapping(
         orchestrator.shutdown()
 
     summaries = _export_scene_state_objects(scene_state, out_dir / "objects", list(segmenter.names))
+    try:
+        from scene_graph.scene_state_io import save_scene_state
+
+        save_scene_state(out_dir / "scene_state.pt", scene_state)
+    except Exception as exc:
+        logger.warning("Could not save scene_state.pt for FARM viser: %s", exc)
     import ultralytics
 
     summary = {
