@@ -1,8 +1,8 @@
 models/
 work/
-third_party/FARM-Project/
-third_party/ss-3dgs/
-third_party/dl_depth_v1/
+/third_party/FARM-Project
+/third_party/ss-3dgs
+/third_party/dl_depth_v1
 **/__pycache__/
 *.pyc
 *.pt
