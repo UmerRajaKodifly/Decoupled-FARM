@@ -331,7 +331,9 @@ def run_farm_association_mapping(
     try:
         from scene_graph.scene_state_io import save_scene_state
 
-        save_scene_state(out_dir / "scene_state.pt", scene_state)
+        feats = scene_state.get("features")
+        feat_dim = int(feats.shape[1]) if isinstance(feats, torch.Tensor) and feats.ndim == 2 else int(segmenter.feature_dim)
+        save_scene_state(out_dir / "scene_state.pt", scene_state, feature_dim=feat_dim)
     except Exception as exc:
         logger.warning("Could not save scene_state.pt for FARM viser: %s", exc)
     import ultralytics
