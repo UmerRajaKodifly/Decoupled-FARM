@@ -1,0 +1,26 @@
+---
+description: All git commits must be linked to Jira SX-3624 for FARM research tracking
+alwaysApply: true
+---
+
+# Jira commit linking (SX-3624)
+
+This repo is **Decoupled FARM**, tracked under:
+
+- Parent: [SX-3624](https://kodiflylimited.atlassian.net/browse/SX-3624) — Breakdown, isolate, reproduce all components of FARM
+- Umer's subtask: [SX-3625](https://kodiflylimited.atlassian.net/browse/SX-3625) — Phase 1: Stream, Segment, Embed
+
+## Required on every commit
+
+1. Start the subject with `SX-3624` so Jira development / smart commits attach to the **overarching** ticket (not only the subtask).
+2. Pattern:
+
+```
+SX-3624 [RESEARCH] <imperative summary of this change>
+```
+
+3. Optionally mention `SX-3625` (or later phase keys) in the **body**, not instead of `SX-3624` on the first line.
+4. Never commit without an `SX-` key.
+5. After push, if the user asked for ticket progress, comment on SX-3624 and the relevant subtask with the commit SHA and GitHub URL.
+
+GitHub repo: https://github.com/UmerRajaKodifly/Decoupled-FARM

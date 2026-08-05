@@ -1,0 +1,124 @@
+# ss-3dgs pipeline params for monocular video → COLMAP SfM only (no 3DGS / Lichtfeld).
+# general.sfm_only skips training. We still prefer calling utils/colmap_sfm.py
+# directly from farm-object-map because ProductionGSPipeline.validate_setup()
+# requires LichtFeld-Studio on PATH even in sfm_only mode.
+#
+# Camera model PINHOLE is Caspar-compatible (SIMPLE_PINHOLE is auto-upgraded).
+
+general:
+  implementation: lichtfeld
+  image_type: standard
+  camera_model: PINHOLE
+  extract_fps: 2.0
+  sharpness_mode: none
+  blur_metric: laplacian
+  enable_frame_dedup: false
+  dedup_ssim_threshold: 0.98
+  dedup_score_max_side: 256
+  sfm_only: true
+  dgs_only: false
+  num_images: null
+  cache_images: null
+
+sfm:
+  mapper: incremental
+  matcher: sequential
+  ba_backend: caspar
+  matcher_fallback_registration_ratio: 0.7
+  force_hierarchical: false
+  gpu_index: "0"
+  global_ba_max_iterations: 300
+  filter_max_reproj_error: 8.0
+  sift_max_num_features: 8192
+  aliked_max_num_features: 2048
+  aliked_max_image_size: 1024
+  hierarchical_chunk_size: 150
+  hierarchical_overlap: 15
+  onnx_model_dir: /opt/models/colmap
+  fallback_matcher: exhaustive
+  feature_extractor: sift
+  matcher_type: bruteforce
+  match_preset: default
+  # Vocab-tree loop closure needs COLMAP's vocab index (onnx_model_dir).
+  # This workstation has no /opt/models/colmap tree — sequential+loop aborts.
+  loop_closure: false
+  guided_matching: false
+
+panorama:
+  render_type: cubemap-nosfm-top-and-bottom
+  cubemap_edge_ignore_margin_px: 0
+  use_yaw_seam_roll: true
+
+masking:
+  mask_mode: none
+  invert_masks: false
+  sfm_gs_mask_path: null
+  sfm_gs_camera_mask_path: null
+  sam3_confidence_threshold: 0.25
+  sam3_device: cuda
+  sam3_model_dir: /opt/models/sam3
+  sam3_checkpoint: sam3.pt
+  face_mask_erosion_px: 5
+  sfm_overexposure_masking:
+    enabled: false
+    overexposed_pixel_threshold: 250
+    dilation_radius_px: 5
+  standard_image_auto_mask:
+    sfm_stage:
+      classes_to_mask: []
+      erosion_px: 5
+    gs_stage:
+      classes_to_mask: []
+      erosion_px: 5
+  panorama_pre_render_auto_mask:
+    sfm_stage:
+      classes_to_mask: []
+      erosion_px: 5
+    gs_stage:
+      classes_to_mask: []
+      erosion_px: 5
+  panorama_face_auto_mask:
+    sfm_stage: {}
+    gs_stage: {}
+
+geo_registration:
+  enabled: false
+  alignment_type: enu
+  alignment_max_error: 2.0
+
+export:
+  formats:
+    - splat
+  export_colmap: true
+
+dataset:
+  min_images_required_for_sfm: 3
+  recognized_image_extensions:
+    - .jpg
+    - .jpeg
+    - .png
+    - .bmp
+    - .tif
+    - .tiff
+    - .webp
+  recognized_video_extensions:
+    - .mp4
+    - .avi
+    - .mov
+    - .mkv
+    - .wmv
+    - .flv
+    - .webm
+
+training:
+  lichtfeld_mrnf_config_relative_path: configs/lichtfeld_mrnf.json
+  extra_lichtfeld_args: null
+  min_steps_scaler: 1.0
+  steps_scaler_cap: 1.0
+  sfm_image_scale: 1.0
+  dgs_image_scale: 1.0
+  steps_scaler_image_count_threshold: 300
+  reference_standard_width_8k: 7680
+  reference_standard_height_8k: 4320
+  reference_panorama_width_8k: 7680
+  reference_panorama_height_8k: 3840

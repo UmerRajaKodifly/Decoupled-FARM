@@ -1,0 +1,86 @@
+# Decoupled FARM
+
+Jira: [SX-3624](https://kodiflylimited.atlassian.net/browse/SX-3624) (parent) · [SX-3625](https://kodiflylimited.atlassian.net/browse/SX-3625) (Phase 1: Stream, Segment, Embed)
+
+Repo: [github.com/UmerRajaKodifly/Decoupled-FARM](https://github.com/UmerRajaKodifly/Decoupled-FARM)
+
+Every commit subject starts with `SX-3624` so work shows on the overarching ticket. Template: `.gitmessage`.
+
+FARM’s **per-frame object-mapping core** on monocular (often 360°) video:
+
+1. Equirect → ss-3dgs **cubemap faces** (pinhole)
+2. COLMAP SfM (Caspar) on the rig
+3. YOLOE masks + **FARM** Hellinger/DINO/union-find (exact source wrap)
+4. Depth under mask → unproject → world Gaussians + sparse voxels
+
+No 3DGS training. No global environment cloud in the mapping loop.
+
+## Docs
+
+- [Back-projection math vs FARM](docs/BACKPROJECTION.md)
+- [FARM vs greedy IoU counts](docs/FARM_VS_IOU.md)
+- [Prior R&D notes](docs/prior/)
+
+## Environment
+
+```bash
+source env.sh   # COLMAP 4.1.0+Caspar + conda env farm-map
+```
+
+Always source `env.sh`. System COLMAP 3.7 will silently drop Caspar.
+
+## Depth drop-in (`dl_depth_v1`)
+
+Not deployed yet. Mapping **stops** rather than falling back to MVS.
+
+When ready, any one of:
+
+```python
+from farm_object_map.dl_depth_v1 import register_infer_fn
+
+def infer(rgb_bgr, frame_name):
+    depth_m, valid = ...  # metres, same HxW as rgb_bgr (cubemap face)
+    return depth_m, valid
+
+register_infer_fn(infer)
+```
+
+```bash
+export FARM_DL_DEPTH_INFER=my_pkg.depth:infer
+# or precomputed maps:
+python -m farm_object_map map-objects ... --dl-depth-npz-dir work/dl_depth/
+```
+
+Then run `align_poses_to_metric_depth` (COLMAP is up-to-scale; DL depth is metric).
+
+Contract: `src/farm_object_map/depth.py` (`DepthMap` npz).
+
+## 360 / cubemap
+
+Default e2e path is `--image-type panorama` (`cubemap-nosfm-top-and-bottom`).
+FARM unprojection runs only on the resulting pinhole faces — see the math doc.
+
+```bash
+python -m farm_object_map e2e \
+  --video /path/to/export_video.mp4 \
+  --work work/run1 \
+  --image-type panorama \
+  --fps 2
+```
+
+FPS default is **2.0** (`configs/ss3dgs_sfm_only.yaml`).
+
+## Association
+
+- `--association farm` (default): FARM modules, DINO via `resolve_dino_backbone()`
+- `--association greedy_iou`: 2D same-class IoU ≥ 0.3 baseline
+
+Vocab: spatialGPT `construction_site_object_vocabulary.json` via adapter
+(`src/farm_object_map/vocab.py`), not hand-edited.
+
+## YOLOE
+
+FARM-vendored fork, not PyPI 8.4.x:
+
+- `FARM-Project/third_party/yoloe` @ `7ed2b05` → ultralytics **8.3.39**
+- + `ml-mobileclip`, weights from `FARM-Project/bootstrap_models.sh`

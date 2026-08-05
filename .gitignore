@@ -1,0 +1,12 @@
+models/
+work/
+**/__pycache__/
+*.pyc
+*.pt
+*.npz
+*.ply
+.cache/
+*.egg-info/
+.pytest_cache/
+.env
+

@@ -1,0 +1,29 @@
+# Install into conda env farm-map with PYTHONNOUSERSITE=1.
+# pycolmap wheel is local (COLMAP 4.1.0 + Caspar, CUDA 12.8, cp310):
+#   /tmp/colmap410/pycolmap-4.1.0+cu128.bundled-cp310-cp310-manylinux_2_35_x86_64.whl
+torch
+torchvision
+# FARM vendors GoldenGait/yoloe (ultralytics 8.3.39 fork) — install editable:
+#   pip install -e $FARM/third_party/yoloe
+#   pip install -e $FARM/third_party/yoloe/third_party/ml-mobileclip
+# Do NOT use public ultralytics 8.4.x.
+opencv-python-headless
+numpy
+scipy
+pillow
+pyyaml
+huggingface_hub
+transformers>=4.57.0
+timm
+tqdm
+plyfile
+h5py
+loguru
+networkx>=2.8
+supervision
+scikit-learn
+transforms3d
+imageio
+matplotlib
+viser
+pydantic
