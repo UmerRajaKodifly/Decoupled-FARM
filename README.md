@@ -15,19 +15,38 @@ FARM’s **per-frame object-mapping core** on monocular (often 360°) video:
 
 No 3DGS training. No global environment cloud in the mapping loop.
 
+This repository is self-contained: vocab lives in `data/`, and upstream FARM /
+ss-3dgs are cloned under `third_party/` (not sibling folders on a specific machine).
+
 ## Docs
 
 - [Back-projection math vs FARM](docs/BACKPROJECTION.md)
 - [FARM vs greedy IoU counts](docs/FARM_VS_IOU.md)
 - [Prior R&D notes](docs/prior/)
 
-## Environment
+## Setup
 
 ```bash
-source env.sh   # COLMAP 4.1.0+Caspar + conda env farm-map
+git clone https://github.com/UmerRajaKodifly/Decoupled-FARM.git
+cd Decoupled-FARM
+./scripts/bootstrap_third_party.sh
+# then FARM weights:
+( cd third_party/FARM-Project && ./bootstrap_models.sh )
+pip install -e third_party/FARM-Project/third_party/yoloe
+pip install -e third_party/FARM-Project/third_party/yoloe/third_party/ml-mobileclip
+source env.sh
 ```
 
-Always source `env.sh`. System COLMAP 3.7 will silently drop Caspar.
+Override locations if you already have checkouts:
+
+```bash
+export FARM_PROJECT_ROOT=/path/to/FARM-Project
+export SS3DGS_ROOT=/path/to/ss-3dgs
+export SCENE_GRAPH_MODEL_DIR=/path/to/FARM-Project/models
+```
+
+Optional: `COLMAP_ROOT` pointing at a 4.1+Caspar install (otherwise whatever
+`colmap` is on `PATH`).
 
 ## Depth drop-in (`dl_depth_v1`)
 
@@ -75,12 +94,12 @@ FPS default is **2.0** (`configs/ss3dgs_sfm_only.yaml`).
 - `--association farm` (default): FARM modules, DINO via `resolve_dino_backbone()`
 - `--association greedy_iou`: 2D same-class IoU ≥ 0.3 baseline
 
-Vocab: spatialGPT `construction_site_object_vocabulary.json` via adapter
+Vocab: `data/construction_site_object_vocabulary.json` via adapter
 (`src/farm_object_map/vocab.py`), not hand-edited.
 
 ## YOLOE
 
 FARM-vendored fork, not PyPI 8.4.x:
 
-- `FARM-Project/third_party/yoloe` @ `7ed2b05` → ultralytics **8.3.39**
-- + `ml-mobileclip`, weights from `FARM-Project/bootstrap_models.sh`
+- `third_party/FARM-Project/third_party/yoloe` @ `7ed2b05` → ultralytics **8.3.39**
+- + `ml-mobileclip`, weights from that repo’s `bootstrap_models.sh`

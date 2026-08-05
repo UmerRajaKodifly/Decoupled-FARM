@@ -14,11 +14,9 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
+from .paths import DEFAULT_VOCAB_JSON
 
-DEFAULT_SPATIALGPT_VOCAB = Path(
-    "/home/kodifly/Desktop/farm-rnd/ss-spatial-gpt/spatial-app/"
-    "construction_site_object_vocabulary.json"
-)
+DEFAULT_SPATIALGPT_VOCAB = DEFAULT_VOCAB_JSON
 
 
 @dataclass(frozen=True)

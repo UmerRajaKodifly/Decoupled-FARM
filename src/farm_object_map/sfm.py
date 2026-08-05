@@ -3,20 +3,17 @@
 from __future__ import annotations
 
 import logging
-import sys
 from pathlib import Path
 
 import pycolmap
 
-logger = logging.getLogger(__name__)
+from .paths import ensure_ss3dgs_on_path
 
-SS3DGS_ROOT = Path("/home/kodifly/Desktop/farm-rnd/ss-3dgs")
+logger = logging.getLogger(__name__)
 
 
 def _import_ss3dgs():
-    root = str(SS3DGS_ROOT)
-    if root not in sys.path:
-        sys.path.insert(0, root)
+    ensure_ss3dgs_on_path()
     from utils import colmap_sfm
     from utils.colmap_export import export_colmap_sfm_artifacts
     from utils.pipeline_params import load_pipeline_params

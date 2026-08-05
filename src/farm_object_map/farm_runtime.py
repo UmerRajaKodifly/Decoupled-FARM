@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import json
 import logging
-import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal
@@ -20,12 +19,10 @@ import torch
 
 from .associate import IoUTracker
 from .detect import Detection
+from .paths import ensure_farm_on_path
 from .poses import FramePose
 
 logger = logging.getLogger(__name__)
-
-FARM_SRC = Path("/home/kodifly/Desktop/farm-rnd/FARM-Project/src")
-FARM_ROOT = Path("/home/kodifly/Desktop/farm-rnd/FARM-Project")
 
 AssociationMethod = Literal["farm", "greedy_iou"]
 
@@ -62,14 +59,8 @@ class FarmMappingResult:
     summary: dict[str, Any] = field(default_factory=dict)
 
 
-def _ensure_farm_on_path() -> None:
-    src = str(FARM_SRC)
-    if src not in sys.path:
-        sys.path.insert(0, src)
-
-
 def build_farm_segmenter(vocab_txt: Path, cfg: AssociationConfig, device: str = "cuda"):
-    _ensure_farm_on_path()
+    ensure_farm_on_path()
     from scene_graph.segmentation import DINOFeaturesExtractor, YOLOESegmenter
 
     dino_extractor = None
@@ -247,7 +238,7 @@ def run_farm_association_mapping(
     device: str = "cuda",
 ) -> FarmMappingResult:
     """Per-frame FARM orchestrator, plus a parallel greedy-IoU track count."""
-    _ensure_farm_on_path()
+    ensure_farm_on_path()
     from scene_graph.captioning.services import CaptionManager
     from scene_graph.config import FilteringConfig
     from scene_graph.map_update.models import initialize_scene_graph_state

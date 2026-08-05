@@ -8,21 +8,19 @@ mapping calls FARM's YOLOESegmenter on those faces unchanged.
 from __future__ import annotations
 
 import logging
-import sys
 from pathlib import Path
 
 import pycolmap
 
+from .paths import ensure_ss3dgs_on_path
+
 logger = logging.getLogger(__name__)
 
-SS3DGS_ROOT = Path("/home/kodifly/Desktop/farm-rnd/ss-3dgs")
 DEFAULT_RENDER_TYPE = "cubemap-nosfm-top-and-bottom"
 
 
 def _import_ss3dgs_pano():
-    root = str(SS3DGS_ROOT)
-    if root not in sys.path:
-        sys.path.insert(0, root)
+    ensure_ss3dgs_on_path()
     from src.pano_processing import (
         PanoProcessor,
         apply_cubemap_edge_margin_to_mask_trees,

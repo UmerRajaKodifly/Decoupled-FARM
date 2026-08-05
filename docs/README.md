@@ -6,7 +6,7 @@ Tracked under [SX-3624](https://kodiflylimited.atlassian.net/browse/SX-3624) / P
 |---|---|
 | [BACKPROJECTION.md](BACKPROJECTION.md) | Cubemap resample math + FARM pinhole unprojection (match vs diverge) |
 | [FARM_VS_IOU.md](FARM_VS_IOU.md) | What the farm vs greedy-IoU object-count comparison means |
-| [prior/](prior/) | Earlier R&D notes copied from the parent `farm-rnd` workspace |
+| [prior/](prior/) | Earlier R&D notes (snapshots, not live sibling checkouts) |
 
 Prior notes (unchanged snapshots):
 

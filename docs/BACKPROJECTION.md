@@ -30,7 +30,7 @@ Camera frame (OpenCV / COLMAP / FARM): \(+X\) right, \(+Y\) down, \(+Z\) forward
 
 ## 1. Stage A — ss-3dgs cubemap (not FARM)
 
-Source: `ss-3dgs/utils/pano_utils.py`, `ss-3dgs/src/pano_processing.py`.
+Source: `third_party/ss-3dgs/utils/pano_utils.py`, `third_party/ss-3dgs/src/pano_processing.py`.
 
 Default render type matches `configs/ss3dgs_sfm_only.yaml`:
 
@@ -129,7 +129,7 @@ exactly as for ordinary pinhole frames.
 
 ## 2. Stage B — FARM back-projection (exact)
 
-Source: `FARM-Project/src/scene_graph/segmentation/yoloe.py` around 1147–1151,
+Source: `third_party/FARM-Project/src/scene_graph/segmentation/yoloe.py` around 1147–1151,
 plus `transform_segmentation_to_world` in `scene_graph/utils/geometry.py`.
 
 When `--association farm`, we do **not** reimplement this. We call

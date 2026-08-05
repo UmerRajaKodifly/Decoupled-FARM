@@ -12,6 +12,8 @@ from typing import Protocol, runtime_checkable
 
 import numpy as np
 
+from .paths import dl_depth_search_roots
+
 # Sentinel used in float32 depth arrays for "no measurement".
 # NaN is also accepted by downstream filters. Zero is treated as invalid.
 INVALID_DEPTH = 0.0
@@ -126,14 +128,7 @@ class DepthSource(Protocol):
         ...
 
 
-# Candidate locations for the colleague DL metric-depth model. None of these
-# are assumed to exist — ``probe_dl_depth_v1`` reports what is actually here.
-_DL_DEPTH_SEARCH_ROOTS = (
-    Path("/home/kodifly/Desktop/farm-rnd"),
-    Path("/home/kodifly/Desktop/farm-rnd/farm-object-map"),
-    Path("/home/kodifly/Desktop/farm-rnd/dl-depth"),
-    Path("/home/kodifly/Desktop/farm-rnd/depth-model"),
-)
+# Optional extra roots via DL_DEPTH_ROOT / FARM_DL_DEPTH_ROOT, plus in-repo dirs.
 _DL_DEPTH_NAME_HINTS = (
     "dl_depth",
     "dl-depth",
@@ -153,7 +148,7 @@ def probe_dl_depth_v1() -> dict:
     does **not** fall back to COLMAP MVS.
     """
     hits: list[str] = []
-    for root in _DL_DEPTH_SEARCH_ROOTS:
+    for root in dl_depth_search_roots():
         if not root.is_dir():
             continue
         for path in root.rglob("*"):
