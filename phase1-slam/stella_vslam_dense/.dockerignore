@@ -1,0 +1,26 @@
+# hidden files and dirs
+.gitignore
+.git/
+.idea/
+.vscode/
+.cache/
+.venv/
+
+# not needed for building
+Dockerfile*
+LICENSE
+README.md
+.travis.yml
+wercker.yml
+docs/
+test/
+__pycache__/
+
+# build directory
+build/
+cmake-build-debug/
+cmake-build-release/
+
+# build cache
+CMakeCache.txt
+CMakeFiles/
