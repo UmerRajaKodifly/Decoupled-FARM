@@ -1,0 +1,56 @@
+# Phase 2 + Phase 3 — YOLOE/DINOv3 + FARM map update (no ROS / no vLLM)
+# syntax=docker/dockerfile:1
+FROM nvidia/cuda:12.4.1-devel-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    FARM_ROOT=/farm_src \
+    SCENE_GRAPH_MODEL_DIR=/models \
+    MOBILECLIP_CHECKPOINT=/models/mobileclip/mobileclip_blt.pt \
+    MOBILECLIP_BLT_CKPT=/models/mobileclip/mobileclip_blt.pt \
+    MOBILECLIP_WEIGHTS_DIR=/models/mobileclip \
+    CONSTRUCTION_VOCAB=/vocab/construction_vocab.txt \
+    PIPELINE_LOG_DIR=/outputs/logs
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        python3 python3-pip python3-dev \
+        libgl1 libglib2.0-0 ffmpeg git curl ca-certificates \
+        build-essential \
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -sf /usr/bin/python3 /usr/bin/python \
+    && pip3 install --no-cache-dir -U pip setuptools wheel
+
+# CUDA torch (cu124)
+RUN pip3 install --no-cache-dir \
+    --index-url https://download.pytorch.org/whl/cu124 \
+    torch torchvision torchaudio
+
+# Runtime deps (Phase 2/3)
+RUN pip3 install --no-cache-dir \
+    "transformers>=4.57.0" huggingface_hub safetensors accelerate \
+    opencv-python-headless h5py loguru "networkx>=2.8" supervision tqdm \
+    timm scikit-learn scipy transforms3d "imageio[ffmpeg]" matplotlib \
+    pydantic Pillow PyYAML requests pandas seaborn psutil py-cpuinfo \
+    open-clip-torch ultralytics-thop ultralytics viser \
+    "setuptools<70"
+
+WORKDIR /workspace
+
+# Vendored FARM + YOLOE
+COPY farm_src /farm_src
+COPY common /workspace/common
+COPY phase2 /workspace/phase2
+COPY phase3 /workspace/phase3
+COPY vocab /vocab
+COPY docker/farm_entrypoint.sh /workspace/farm_entrypoint.sh
+RUN chmod +x /workspace/farm_entrypoint.sh
+
+# Editable installs: YOLOE + MobileCLIP + farm-scene-graph (no deps — already installed)
+RUN pip3 install --no-cache-dir -e /farm_src/third_party/yoloe \
+ && pip3 install --no-cache-dir -e /farm_src/third_party/yoloe/third_party/ml-mobileclip \
+ && pip3 install --no-cache-dir -e /farm_src --no-deps
+
+ENV PYTHONPATH=/workspace/common:/workspace/phase2:/workspace/phase3:/farm_src/src:${PYTHONPATH}
+
+ENTRYPOINT ["/workspace/farm_entrypoint.sh"]

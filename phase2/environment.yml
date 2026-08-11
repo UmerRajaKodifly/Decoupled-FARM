@@ -1,0 +1,48 @@
+# Conda environment for FARM Phase 2 host-side inference (no Docker, no ROS, no vLLM).
+#
+# Preferred install path is scripts/setup_conda_env.sh (pins CUDA-aware PyTorch first).
+# This yml is a lighter alternative / documentation of the package set.
+
+name: farm-phase2
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - git
+  - libgl
+  - libglib
+  - ffmpeg
+  - pillow
+  - pyyaml
+  - numpy
+  - scipy
+  - scikit-learn
+  - matplotlib
+  - tqdm
+  - requests
+  - pip:
+      # PyTorch is installed explicitly by setup_conda_env.sh with the CUDA wheel index.
+      # Do not list torch here — pip would grab a CPU-only build.
+      - torchvision
+      - torchaudio
+      - "transformers>=4.57.0"
+      - huggingface_hub
+      - safetensors
+      - accelerate
+      - opencv-python-headless
+      - h5py
+      - loguru
+      - "networkx>=2.8"
+      - supervision
+      - timm
+      - transforms3d
+      - "imageio[ffmpeg]"
+      - pydantic
+      - ultralytics-thop
+      - pandas
+      - seaborn
+      - psutil
+      - py-cpuinfo
+      - open-clip-torch
