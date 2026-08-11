@@ -131,12 +131,19 @@ def run_phase3(
     min_num_pixels: int = 50,
     min_distance_m: float = 0.3,
     max_distance_m: float = 80.0,
+    label_min_score: float = 0.25,
+    label_margin_ratio: float = 1.15,
+    label_use_pixel_weight: bool = True,
 ) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
     log_stage_banner(log, "Phase 3 — Associate / Fuse / Map")
 
     pack_paths = _sorted_pack_paths(det_dir)
     log.info("Found %d keyframe packs in %s", len(pack_paths), det_dir)
+    log.info(
+        "Label voting: min_score=%.2f margin=%.2f pixel_weight=%s",
+        label_min_score, label_margin_ratio, label_use_pixel_weight,
+    )
 
     scene_state = initialize_scene_graph_state(
         feature_dim=feature_dim,
@@ -195,6 +202,9 @@ def run_phase3(
             scene_state,
             detection_image_ids,
             max_merge_distance_m=max_merge_distance_m,
+            label_min_score=label_min_score,
+            label_margin_ratio=label_margin_ratio,
+            label_use_pixel_weight=label_use_pixel_weight,
         )
 
         n_new = len(update_info.get("new_object_indices") or [])
@@ -210,16 +220,21 @@ def run_phase3(
             "n_merged": n_merged,
             "n_objects": n_obj,
             "n_active": n_active,
+            "label_votes": int(update_info.get("label_vote_n_votes_applied") or 0),
+            "label_changes": int(update_info.get("label_vote_n_labels_changed") or 0),
         })
 
         elapsed_kf = time.time() - t_kf
         if kf_index % 10 == 0:
             log.info(
                 "kf %04d/%04d | raw=%d filt=%d new=%d merged=%d "
-                "| total_obj=%d active=%d | %.2fs",
+                "| total_obj=%d active=%d | votes=%d flips=%d | %.2fs",
                 kf_index, len(pack_paths) - 1,
                 n_raw, n_filtered, n_new, n_merged,
-                n_obj, n_active, elapsed_kf,
+                n_obj, n_active,
+                int(update_info.get("label_vote_n_votes_applied") or 0),
+                int(update_info.get("label_vote_n_labels_changed") or 0),
+                elapsed_kf,
             )
 
         # --- checkpoint ---
@@ -284,6 +299,12 @@ def _parse_args() -> argparse.Namespace:
                    help="Minimum detection distance from camera (m)")
     p.add_argument("--max-dist", type=float, default=80.0,
                    help="Maximum detection distance from camera (m)")
+    p.add_argument("--label-min-score", type=float, default=0.25,
+                   help="Min detection score to contribute a class vote")
+    p.add_argument("--label-margin", type=float, default=1.15,
+                   help="Top vote mass must exceed runner-up * margin to flip label")
+    p.add_argument("--label-no-pixel-weight", action="store_true",
+                   help="Vote with score only (disable sqrt(num_pixels) weights)")
     return p.parse_args()
 
 
@@ -301,5 +322,8 @@ if __name__ == "__main__":
         min_num_pixels=args.min_pixels,
         min_distance_m=args.min_dist,
         max_distance_m=args.max_dist,
+        label_min_score=args.label_min_score,
+        label_margin_ratio=args.label_margin,
+        label_use_pixel_weight=not args.label_no_pixel_weight,
     )
     print(f"scene_state.pt written → {out}")

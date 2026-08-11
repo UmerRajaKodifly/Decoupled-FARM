@@ -32,6 +32,7 @@ Phase 3 is a FARM-faithful implementation.  It calls FARM's:
 | `object_update.py::update_scene_graph_state` | Gaussian / voxel merge |
 | `covisibility.py::update_covisibility_from_visible_indices` | kNN covis edges |
 | `cannot_link.py::add_same_frame_cannot_links_from_detection_assignments` | post-update cannot-links |
+| *(local)* `label_vote.py` | multi-frame weighted class votes override FARM first-wins `class_ids` |
 
 ---
 
@@ -48,16 +49,17 @@ Each pack covers all 4 cubemap faces of one keyframe.
 ## Directory layout
 
 ```
-phase3-associate-fuse-map/
+phase3/
 ├── README.md           ← this file
 ├── filter.py           ← face-aware border + distance + pixel + IoU filtering
 ├── associate.py        ← neighbor lookup + union-find correspondence
 ├── update.py           ← Gaussian/voxel/covis fusion into SceneState
+├── label_vote.py       ← score × √pixels class voting (+ merge fold / margin)
 ├── run_phase3.py       ← main loop + CLI + checkpointing
 ├── validate_phase3.py  ← metrics, plots, PASS/WARN/FAIL gate
 └── output/
-    ├── scene_state.pt              ← final product
-    ├── run_stats.json              ← per-keyframe counters
+    ├── scene_state.pt              ← final product (+ class_vote_mass buffers)
+    ├── run_stats.json              ← per-keyframe counters (incl. label votes/flips)
     ├── scene_state_ckpt_kf*.pt     ← intermediate checkpoints (every 50 kf)
     └── validation/
         ├── object_count_growth.png

@@ -41,6 +41,8 @@ from scene_graph.map_update.covisibility import (  # noqa: E402
 )
 from scene_graph.map_update.object_update import update_scene_graph_state  # noqa: E402
 
+from label_vote import apply_label_voting_after_fuse  # noqa: E402
+
 
 # ---------------------------------------------------------------------------
 # Public API
@@ -55,6 +57,9 @@ def fuse_detections(
     *,
     allow_new_objects: bool = True,
     max_merge_distance_m: Optional[float] = 1.0,
+    label_min_score: float = 0.25,
+    label_margin_ratio: float = 1.15,
+    label_use_pixel_weight: bool = True,
 ) -> dict:
     """Fuse detections into *scene_state* in-place and update covisibility.
 
@@ -66,6 +71,8 @@ def fuse_detections(
          seen this keyframe.
       4. Call `add_same_frame_cannot_links_from_detection_assignments`
          (post-update, so new object indices are known).
+      5. Weighted multi-frame class voting — updates ``class_ids`` from
+         ``class_vote_mass`` (score × sqrt(pixels) votes + margin).
 
     Parameters
     ----------
@@ -83,6 +90,12 @@ def fuse_detections(
         Whether unmatched detections create new objects.
     max_merge_distance_m : float or None
         Kill a proposed merge if Gaussian centres are further than this.
+    label_min_score : float
+        Min YOLOE conf for a detection to vote on the object label.
+    label_margin_ratio : float
+        Require top vote mass this much larger than runner-up to flip labels.
+    label_use_pixel_weight : bool
+        Weight votes by sqrt(num_pixels / 500) in addition to score.
 
     Returns
     -------
@@ -191,5 +204,17 @@ def fuse_detections(
     )
     update_info["same_frame_cannot_links_added"] = int(n_added)
     update_info["n_visible"] = len(visible_set)
+
+    # ---- multi-frame class label voting (overrides FARM first-wins) ----
+    vote_stats = apply_label_voting_after_fuse(
+        scene_state,
+        pack,
+        det_to_obj,
+        update_info,
+        min_score=label_min_score,
+        margin_ratio=label_margin_ratio,
+        use_pixel_weight=label_use_pixel_weight,
+    )
+    update_info.update({f"label_vote_{k}": v for k, v in vote_stats.items()})
 
     return update_info
