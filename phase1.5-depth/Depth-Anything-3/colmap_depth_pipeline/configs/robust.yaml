@@ -1,0 +1,57 @@
+# Alias: same as recon.yaml (relative pose-cond reconstruction for ~12GB GPUs)
+# Prefer configs/recon.yaml going forward.
+
+render_type: perspective_non_overlapping
+faces_per_frame: 4
+hfov_deg: 90.0
+vfov_deg: 90.0
+num_steps_yaw: 4
+pitches_deg: [0.0]
+
+colmap_image: gcr.io/spatialsense/spatialsense-3dgs-job:3dgsbase1.5
+
+model_name: depth-anything/DA3-LARGE-1.1
+window_size: 2
+overlap: 1
+pose_condition: true
+align_to_input_ext_scale: false
+use_ray_pose: true
+process_res: 504
+ref_view_strategy: saddle_balanced
+
+scale_align:
+  mode: none
+  n_iters: 3
+  thresh_mult: 2.0
+  min_points: 20
+  conf_mode: weight
+  conf_percentile: 20.0
+  conf_min: null
+
+fusion:
+  enabled: false
+  seam_mode: conf_weight
+
+depth_agree:
+  enabled: true
+  per_face_scale: true
+  sampling_number: 5000000
+
+temporal_smooth:
+  enabled: false
+  window: 5
+
+sparse_filter:
+  min_track_length: 3
+  max_reproj_error: 4.0
+
+save_format: npy
+
+sky_seg:
+  enabled: false
+
+video:
+  extract_fps: 2.0
+  max_frames: null
+  jpeg_quality: 2
+  frame_pattern: frame_%06d.jpg

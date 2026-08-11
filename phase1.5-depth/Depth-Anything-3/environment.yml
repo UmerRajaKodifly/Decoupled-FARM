@@ -1,0 +1,23 @@
+name: da3
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - ffmpeg
+  - pip:
+      # Install torch/xformers first after env create (see README / setup script).
+      - numpy<2
+      - opencv-python
+      - scipy
+      - tqdm
+      - pyyaml
+      - einops
+      - huggingface_hub
+      - imageio
+      - pillow
+      - omegaconf
+      - safetensors
+      - typer
+      - requests

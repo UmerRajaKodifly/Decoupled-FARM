@@ -1,0 +1,8 @@
+numpy
+opencv-python
+scipy
+tqdm
+pyyaml
+# Optional on host for reading sparse models; SfM runs in Docker
+# (default: gcr.io/spatialsense/spatialsense-3dgs-job:3dgsbase1.5 with CASPAR)
+# pycolmap

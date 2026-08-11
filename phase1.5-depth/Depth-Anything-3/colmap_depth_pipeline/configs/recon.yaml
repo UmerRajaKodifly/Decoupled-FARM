@@ -1,0 +1,68 @@
+# Best relative reconstruction (not metric).
+# Pose-conditioned DA3-LARGE + COLMAP poses → depths in COLMAP units → PLY.
+#
+#   python colmap_depth_pipeline/scripts/run_pipeline.py \
+#     --colmap_dir indoor_output/sfm --pano_dir indoor_output/frames \
+#     --out_dir indoor_output/depth \
+#     --config colmap_depth_pipeline/configs/recon.yaml --export_ply -v
+
+render_type: perspective_non_overlapping
+faces_per_frame: 4
+hfov_deg: 90.0
+vfov_deg: 90.0
+num_steps_yaw: 4
+pitches_deg: [0.0]
+
+colmap_image: gcr.io/spatialsense/spatialsense-3dgs-job:3dgsbase1.5
+
+# Any-view relative depth (pose-cond). Fits ~12GB better than NESTED-GIANT.
+model_name: depth-anything/DA3-LARGE-1.1
+# 2 frames × 4 faces = 8 views — raise to 4 if VRAM allows
+window_size: 2
+overlap: 1
+pose_condition: true
+# Prefer false for short panos windows (Umeyama needs ≥3 unique centers).
+# Depth→COLMAP scale is handled by per_face_scale onto sparse.
+align_to_input_ext_scale: false
+use_ray_pose: true
+process_res: 504
+ref_view_strategy: saddle_balanced
+
+scale_align:
+  # No metric alpha — poses stay in COLMAP units (alpha=1)
+  mode: none
+  n_iters: 3
+  thresh_mult: 2.0
+  min_points: 20
+  conf_mode: weight
+  conf_percentile: 20.0
+  conf_min: null
+
+fusion:
+  enabled: false
+  seam_mode: conf_weight
+
+depth_agree:
+  enabled: true
+  per_face_scale: true
+  sampling_number: 5000000
+
+temporal_smooth:
+  enabled: false
+  window: 5
+
+sparse_filter:
+  min_track_length: 3
+  max_reproj_error: 4.0
+
+save_format: npy
+save_face_depth_vis: true
+
+sky_seg:
+  enabled: false  # DualDPT / LARGE has no sky head
+
+video:
+  extract_fps: 2.0
+  max_frames: null
+  jpeg_quality: 2
+  frame_pattern: frame_%06d.jpg
