@@ -1,0 +1,4 @@
+# Disable accidental upstream automation if any residual files reappear
+**/.github/**
+**/.pre-commit-config.yaml
+**/.gitmodules

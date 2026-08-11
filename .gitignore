@@ -1,16 +1,40 @@
-models/
-work/
-outputs/
-/third_party/FARM-Project
-/third_party/ss-3dgs
-/third_party/dl_depth_v1
-**/__pycache__/
-*.pyc
-*.pt
-*.npz
-*.ply
-.cache/
-*.egg-info/
-.pytest_cache/
-.env
+# Runtime artifacts (never commit)
+outputs/phase1/**
+outputs/phase1.5/**
+outputs/phase2/**
+outputs/phase3/**
+outputs/logs/**
+!outputs/**/.gitkeep
 
+models/**
+!models/.gitkeep
+
+inputs/**
+!inputs/.gitkeep
+
+# Large / generated binary weights
+*.pt
+*.pth
+*.onnx
+*.fbow
+*.ply
+*.db
+*.las
+
+# Python
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/*.egg-info/
+**/.mypy_cache/
+**/.ruff_cache/
+
+# Editors / OS
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# HuggingFace / torch caches (if any land in tree)
+.cache/
+huggingface/

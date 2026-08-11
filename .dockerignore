@@ -1,0 +1,15 @@
+# Keep farm image slim — models and outputs are bind-mounted at runtime
+models
+outputs
+inputs
+**/.git
+**/.github
+**/__pycache__
+**/*.pyc
+**/*.pt
+**/*.ply
+**/*.db
+**/*.fbow
+phase1-slam
+phase1.5-depth
+**/.pytest_cache

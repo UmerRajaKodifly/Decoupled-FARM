@@ -1,0 +1,101 @@
+# End-to-end construction-site spatial memory pipeline
+# Services run sequentially via ./run_pipeline.sh (not all at once).
+name: farm-e2e
+
+x-gpu: &gpu
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            count: 1
+            capabilities: [gpu]
+
+services:
+  stella:
+    <<: *gpu
+    gpus: all
+    image: farm-e2e-stella:latest
+    build:
+      context: ./phase1-slam/stella_vslam_dense
+      dockerfile: Dockerfile.pipeline
+    environment:
+      VIDEO_FILE: ${VIDEO_FILE:-}
+      RESIZE: ${RESIZE:-1920x960}
+      FRAME_STEP: ${FRAME_STEP:-2}
+      PIPELINE_RUN_ID: ${PIPELINE_RUN_ID:-run_local}
+      PIPELINE_LOG_DIR: /outputs/logs
+      VOCAB_PATH: /data/orb_vocab.fbow
+      SLAM_CONFIG: /config/slam_config.yaml
+      OUT_DIR: /outputs
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    volumes:
+      - ./inputs:/inputs:ro
+      - ./outputs/phase1:/outputs
+      - ./outputs/logs:/outputs/logs
+      - ./config/slam_config.yaml:/config/slam_config.yaml:ro
+      - ./models/orb_vocab.fbow:/data/orb_vocab.fbow:ro
+      # Host entrypoint so path fixes apply without rebuild
+      - ./phase1-slam/stella_vslam_dense/entrypoint.sh:/entrypoint.sh:ro
+    entrypoint: ["/bin/bash", "/entrypoint.sh"]
+    ipc: host
+    ulimits:
+      memlock: -1
+      stack: 67108864
+
+  da3:
+    <<: *gpu
+    gpus: all
+    image: farm-e2e-da3:latest
+    build:
+      context: ./phase1.5-depth
+      dockerfile: Dockerfile
+    environment:
+      PIPELINE_RUN_ID: ${PIPELINE_RUN_ID:-run_local}
+      PIPELINE_LOG_DIR: /outputs/logs
+      PHASE1_DIR: /phase1
+      OUT_DIR: /phase1.5
+      WINDOW_SIZE: ${WINDOW_SIZE:-4}
+      MAX_KFS: ${MAX_KFS:-}
+      DA3_MODEL: ${DA3_MODEL:-depth-anything/DA3METRIC-LARGE}
+      HF_HOME: /models/hf_cache
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    volumes:
+      - ./outputs/phase1:/phase1:ro
+      - ./outputs/phase1.5:/phase1.5
+      - ./outputs/logs:/outputs/logs
+      - ./models:/models
+
+  farm:
+    <<: *gpu
+    gpus: all
+    image: farm-e2e-farm:latest
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.farm
+    environment:
+      PIPELINE_RUN_ID: ${PIPELINE_RUN_ID:-run_local}
+      PIPELINE_LOG_DIR: /outputs/logs
+      PHASE15_DIR: /phase1.5
+      PHASE2_DIR: /phase2
+      PHASE3_DIR: /phase3
+      DEVICE: ${DEVICE:-cuda}
+      YOLOE_CONF: ${YOLOE_CONF:-0.35}
+      KF_STRIDE: ${KF_STRIDE:-1}
+      FARM_ROOT: /farm_src
+      SCENE_GRAPH_MODEL_DIR: /models
+      MOBILECLIP_CHECKPOINT: /models/mobileclip/mobileclip_blt.pt
+      MOBILECLIP_BLT_CKPT: /models/mobileclip/mobileclip_blt.pt
+      MOBILECLIP_WEIGHTS_DIR: /models/mobileclip
+      CONSTRUCTION_VOCAB: /vocab/construction_vocab.txt
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    volumes:
+      - ./outputs/phase1.5:/phase1.5:ro
+      - ./outputs/phase2:/phase2
+      - ./outputs/phase3:/phase3
+      - ./outputs/logs:/outputs/logs
+      - ./models:/models:ro
+      - ./vocab:/vocab:ro
