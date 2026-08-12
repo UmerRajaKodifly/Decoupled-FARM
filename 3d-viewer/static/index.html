@@ -175,15 +175,44 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 
 // ─── Coordinate system fix ────────────────────────────────────────────────────
-// Stella VSLAM / OpenCV convention: Y points DOWN.
-// Three.js convention: Y points UP.
-// We negate Y on every world coordinate so the scene renders right-side-up.
-const FLIP_Y = true;
-function fy(y) { return FLIP_Y ? -y : y; }
+// Stella / OpenCV world frame: X right, Y down, Z forward.
+// Three.js: X right, Y up, Z toward viewer (right-handed).
+// Flipping Y alone mirrors the cloud (left/right swap). Flip Y and Z together
+// to convert frames without changing internal geometry.
+function toViewer(x, y, z) {
+  return [x, -y, -z];
+}
+function transformFlatXYZ(f32) {
+  for (let i = 0; i < f32.length; i += 3) {
+    f32[i + 1] = -f32[i + 1];
+    f32[i + 2] = -f32[i + 2];
+  }
+  return f32;
+}
+function transformPoint(p) {
+  return toViewer(p[0], p[1], p[2]);
+}
+function transformBbox(bmin, bmax) {
+  const corners = [
+    toViewer(bmin[0], bmin[1], bmin[2]),
+    toViewer(bmin[0], bmin[1], bmax[2]),
+    toViewer(bmin[0], bmax[1], bmin[2]),
+    toViewer(bmin[0], bmax[1], bmax[2]),
+    toViewer(bmax[0], bmin[1], bmin[2]),
+    toViewer(bmax[0], bmin[1], bmax[2]),
+    toViewer(bmax[0], bmax[1], bmin[2]),
+    toViewer(bmax[0], bmax[1], bmax[2]),
+  ];
+  const xs = corners.map(c => c[0]), ys = corners.map(c => c[1]), zs = corners.map(c => c[2]);
+  return [
+    [Math.min(...xs), Math.min(...ys), Math.min(...zs)],
+    [Math.max(...xs), Math.max(...ys), Math.max(...zs)],
+  ];
+}
 
 // ─── State ───────────────────────────────────────────────────────────────────
 let metadata = null;
-let objects   = [];         // parsed objects.json array (Y already flipped)
+let objects   = [];         // parsed objects.json array (viewer-frame coords)
 let objMeshes = [];         // { id, pts: Points, box: LineSegments, label: CSS2DObject, billboard: Sprite }
 let bgCloud   = null;       // Three.js Points
 
@@ -221,28 +250,25 @@ function hexToColor(hex) {
   return new THREE.Color(hex);
 }
 
-/** Decode base64 string → Float32Array of XYZ pts, with Y flipped */
+/** Decode base64 string → Float32Array of XYZ pts in viewer frame */
 function b64ToXYZ(b64) {
   const bin = atob(b64);
   const buf = new ArrayBuffer(bin.length);
   const u8  = new Uint8Array(buf);
   for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
-  const f32 = new Float32Array(buf);   // flat xyz xyz xyz...
-  if (FLIP_Y) {
-    for (let i = 1; i < f32.length; i += 3) f32[i] = -f32[i];
-  }
-  return f32;
+  const f32 = new Float32Array(buf);
+  return transformFlatXYZ(f32);
 }
 
-/** Build wireframe LineSegments box from min/max (coords already Y-flipped) */
+/** Build wireframe LineSegments box from min/max (viewer frame) */
 function makeBox(bmin, bmax, color) {
-  // After Y-flip, bmin[1] and bmax[1] may be swapped — always use correct order
-  const ylo = Math.min(bmin[1], bmax[1]);
-  const yhi = Math.max(bmin[1], bmax[1]);
-  const size = [bmax[0]-bmin[0], yhi-ylo, bmax[2]-bmin[2]];
-  const cx   = (bmax[0]+bmin[0])/2;
-  const cy   = (yhi+ylo)/2;
-  const cz   = (bmax[2]+bmin[2])/2;
+  const xlo = Math.min(bmin[0], bmax[0]), xhi = Math.max(bmin[0], bmax[0]);
+  const ylo = Math.min(bmin[1], bmax[1]), yhi = Math.max(bmin[1], bmax[1]);
+  const zlo = Math.min(bmin[2], bmax[2]), zhi = Math.max(bmin[2], bmax[2]);
+  const size = [xhi - xlo, yhi - ylo, zhi - zlo];
+  const cx   = (xhi + xlo) / 2;
+  const cy   = (yhi + ylo) / 2;
+  const cz   = (zhi + zlo) / 2;
   const geo  = new THREE.BoxGeometry(...size);
   const edges= new THREE.EdgesGeometry(geo);
   geo.dispose();
@@ -317,9 +343,9 @@ async function loadBgCloud(nPts) {
     const STRIDE = 16; // 4+4+4+1+1+1+1
     for (let i = 0; i < count; i++) {
       const off = i * STRIDE;
-      pos[i*3]   =  data.getFloat32(off,     true);
-      pos[i*3+1] = fy(data.getFloat32(off + 4, true));   // flip Y
-      pos[i*3+2] =  data.getFloat32(off + 8, true);
+      pos[i*3]   = data.getFloat32(off,     true);
+      pos[i*3+1] = -data.getFloat32(off + 4, true);
+      pos[i*3+2] = -data.getFloat32(off + 8, true);
       col[i*3]   = data.getUint8(off + 12) / 255;
       col[i*3+1] = data.getUint8(off + 13) / 255;
       col[i*3+2] = data.getUint8(off + 14) / 255;
@@ -342,11 +368,12 @@ async function loadObjects() {
   const resp = await fetch('objects.json');
   objects    = await resp.json();
 
-  // Flip Y on all world coordinates so scene is Y-up
+  // Convert Stella/OpenCV coords → Three.js viewer frame
   for (const obj of objects) {
-    obj.mean[1]     = fy(obj.mean[1]);
-    if (obj.bbox_min) obj.bbox_min[1] = fy(obj.bbox_min[1]);
-    if (obj.bbox_max) obj.bbox_max[1] = fy(obj.bbox_max[1]);
+    obj.mean = transformPoint(obj.mean);
+    if (obj.bbox_min && obj.bbox_max) {
+      [obj.bbox_min, obj.bbox_max] = transformBbox(obj.bbox_min, obj.bbox_max);
+    }
   }
 
   console.log(`[viewer] ${objects.length} objects loaded`);
