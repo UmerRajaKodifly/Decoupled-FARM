@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>3D Object Memory Viewer</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#111;color:#e0e0e0;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+/* ── Toolbar ─────────────────────────────────────────────────────────── */
+#toolbar{
+  display:flex;align-items:center;gap:10px;padding:7px 14px;
+  background:#1a1a1a;border-bottom:1px solid #333;flex-shrink:0;flex-wrap:wrap
+}
+#toolbar h1{font-size:13px;font-weight:600;color:#ccc;white-space:nowrap;margin-right:6px}
+#search{
+  padding:4px 10px;border-radius:5px;border:1px solid #444;background:#252525;
+  color:#ddd;font-size:12px;width:180px
+}
+#search::placeholder{color:#666}
+.toggle-group{display:flex;gap:6px;flex-wrap:wrap}
+.toggle-btn{
+  padding:3px 10px;border-radius:4px;border:1px solid #444;background:#252525;
+  color:#aaa;cursor:pointer;font-size:11px;transition:all .15s
+}
+.toggle-btn.active{background:#2a5a8a;border-color:#4a8ac4;color:#fff}
+#stats{font-size:11px;color:#666;margin-left:auto;white-space:nowrap}
+#loading-bar{
+  position:fixed;top:0;left:0;height:3px;background:#4a8ac4;
+  width:0%;transition:width .3s;z-index:1000
+}
+
+/* ── Main layout ──────────────────────────────────────────────────────── */
+#main{display:flex;flex:1;overflow:hidden}
+
+/* ── Left sidebar: object list ───────────────────────────────────────── */
+#sidebar{
+  width:220px;min-width:160px;max-width:320px;
+  background:#161616;border-right:1px solid #2a2a2a;
+  display:flex;flex-direction:column;overflow:hidden;flex-shrink:0
+}
+#sidebar-header{
+  padding:8px 10px;font-size:11px;font-weight:600;color:#888;
+  border-bottom:1px solid #2a2a2a;background:#1a1a1a;flex-shrink:0
+}
+#obj-list{flex:1;overflow-y:auto;padding:4px 0}
+#obj-list::-webkit-scrollbar{width:5px}
+#obj-list::-webkit-scrollbar-track{background:#111}
+#obj-list::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
+
+.obj-item{
+  display:flex;align-items:center;gap:8px;padding:5px 10px;
+  cursor:pointer;transition:background .1s;border-left:3px solid transparent
+}
+.obj-item:hover{background:#1f1f1f}
+.obj-item.selected{background:#1a2a3a;border-left-color:#4a8ac4}
+.obj-swatch{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.obj-thumb{width:36px;height:36px;object-fit:cover;border-radius:3px;flex-shrink:0;background:#222}
+.obj-thumb-placeholder{
+  width:36px;height:36px;border-radius:3px;background:#222;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;color:#444;flex-shrink:0
+}
+.obj-info{min-width:0}
+.obj-label{font-size:11px;color:#ccc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.obj-meta{font-size:10px;color:#555;white-space:nowrap}
+
+/* ── Canvas container ─────────────────────────────────────────────────── */
+#canvas-wrap{flex:1;position:relative;overflow:hidden}
+#canvas-wrap canvas{display:block}
+#css2d-layer{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:hidden}
+
+/* ── Detail panel (bottom) ───────────────────────────────────────────── */
+#detail{
+  position:absolute;bottom:0;left:0;right:0;
+  background:rgba(18,18,18,.93);border-top:1px solid #2a2a2a;
+  padding:10px 16px;display:none;flex-direction:row;gap:14px;
+  align-items:flex-start;z-index:10;max-height:160px
+}
+#detail.visible{display:flex}
+#detail-crop{
+  width:120px;height:120px;object-fit:contain;border-radius:4px;
+  background:#1a1a1a;flex-shrink:0;border:1px solid #333
+}
+#detail-crop-placeholder{
+  width:120px;height:120px;background:#1a1a1a;border-radius:4px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:28px;color:#333;flex-shrink:0;border:1px solid #2a2a2a
+}
+#detail-text{flex:1;min-width:0}
+#detail-title{font-size:14px;font-weight:600;color:#ddd;margin-bottom:4px}
+#detail-meta{font-size:11px;color:#888;line-height:1.6}
+#detail-votes{font-size:10px;color:#666;margin-top:4px}
+#detail-close{
+  position:absolute;top:8px;right:10px;cursor:pointer;
+  color:#555;font-size:16px;line-height:1
+}
+#detail-close:hover{color:#ccc}
+
+/* ── CSS2D labels ─────────────────────────────────────────────────────── */
+.label3d{
+  pointer-events:none;white-space:nowrap;
+  font-size:11px;font-weight:500;color:#fff;
+  text-shadow:0 0 4px #000,0 0 8px #000;
+  background:rgba(0,0,0,.35);padding:1px 5px;border-radius:3px
+}
+
+/* ── Isolation overlay ───────────────────────────────────────────────── */
+#isolation-badge{
+  position:absolute;top:10px;left:50%;transform:translateX(-50%);
+  background:rgba(74,138,196,.85);color:#fff;font-size:12px;padding:4px 14px;
+  border-radius:12px;display:none;pointer-events:none;z-index:20
+}
+</style>
+</head>
+<body>
+
+<div id="loading-bar"></div>
+
+<!-- Toolbar -->
+<div id="toolbar">
+  <h1>3D Memory Viewer</h1>
+  <input id="search" type="text" placeholder="Filter objects…"/>
+  <div class="toggle-group">
+    <button class="toggle-btn active" data-layer="bg">Background Cloud</button>
+    <button class="toggle-btn active" data-layer="obj-pts">Object Pts</button>
+    <button class="toggle-btn active" data-layer="boxes">Boxes</button>
+    <button class="toggle-btn active" data-layer="labels">Labels</button>
+    <button class="toggle-btn active" data-layer="billboards">Crops</button>
+  </div>
+  <span id="stats">Loading…</span>
+</div>
+
+<!-- Main -->
+<div id="main">
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <div id="sidebar-header">Objects (<span id="obj-count">0</span>)</div>
+    <div id="obj-list"></div>
+  </div>
+
+  <!-- 3D viewport -->
+  <div id="canvas-wrap">
+    <div id="css2d-layer"></div>
+    <div id="isolation-badge">Isolation mode — double-click again to exit</div>
+  </div>
+</div>
+
+<!-- Detail panel -->
+<div id="detail">
+  <span id="detail-close">✕</span>
+  <img id="detail-crop" style="display:none"/>
+  <div id="detail-crop-placeholder">🔲</div>
+  <div id="detail-text">
+    <div id="detail-title">—</div>
+    <div id="detail-meta">—</div>
+    <div id="detail-votes"></div>
+  </div>
+</div>
+
+<!-- Three.js (r160) -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+// ─── Coordinate system fix ────────────────────────────────────────────────────
+// Stella VSLAM / OpenCV convention: Y points DOWN.
+// Three.js convention: Y points UP.
+// We negate Y on every world coordinate so the scene renders right-side-up.
+const FLIP_Y = true;
+function fy(y) { return FLIP_Y ? -y : y; }
+
+// ─── State ───────────────────────────────────────────────────────────────────
+let metadata = null;
+let objects   = [];         // parsed objects.json array (Y already flipped)
+let objMeshes = [];         // { id, pts: Points, box: LineSegments, label: CSS2DObject, billboard: Sprite }
+let bgCloud   = null;       // Three.js Points
+
+let selectedIdx   = -1;    // index into objects[]
+let isolatedIdx   = -1;    // index into objects[] for isolation mode
+let lastClickTime = 0;
+
+const layers = { bg: true, 'obj-pts': true, boxes: true, labels: true, billboards: true };
+
+// ─── Renderer setup ──────────────────────────────────────────────────────────
+const wrap       = document.getElementById('canvas-wrap');
+const renderer   = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setClearColor(0x0d0d0d);
+wrap.appendChild(renderer.domElement);
+
+const css2dRenderer = new CSS2DRenderer({ element: document.getElementById('css2d-layer') });
+css2dRenderer.setSize(wrap.clientWidth, wrap.clientHeight);
+
+const scene  = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(55, wrap.clientWidth / wrap.clientHeight, 0.01, 2000);
+camera.position.set(0, 30, 60);  // positioned above and behind scene centre; adjusted after load
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.screenSpacePanning = false;
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+function setProgress(pct) {
+  document.getElementById('loading-bar').style.width = pct + '%';
+}
+
+function hexToColor(hex) {
+  return new THREE.Color(hex);
+}
+
+/** Decode base64 string → Float32Array of XYZ pts, with Y flipped */
+function b64ToXYZ(b64) {
+  const bin = atob(b64);
+  const buf = new ArrayBuffer(bin.length);
+  const u8  = new Uint8Array(buf);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  const f32 = new Float32Array(buf);   // flat xyz xyz xyz...
+  if (FLIP_Y) {
+    for (let i = 1; i < f32.length; i += 3) f32[i] = -f32[i];
+  }
+  return f32;
+}
+
+/** Build wireframe LineSegments box from min/max (coords already Y-flipped) */
+function makeBox(bmin, bmax, color) {
+  // After Y-flip, bmin[1] and bmax[1] may be swapped — always use correct order
+  const ylo = Math.min(bmin[1], bmax[1]);
+  const yhi = Math.max(bmin[1], bmax[1]);
+  const size = [bmax[0]-bmin[0], yhi-ylo, bmax[2]-bmin[2]];
+  const cx   = (bmax[0]+bmin[0])/2;
+  const cy   = (yhi+ylo)/2;
+  const cz   = (bmax[2]+bmin[2])/2;
+  const geo  = new THREE.BoxGeometry(...size);
+  const edges= new THREE.EdgesGeometry(geo);
+  geo.dispose();
+  const mat  = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.4 });
+  const ls   = new THREE.LineSegments(edges, mat);
+  ls.position.set(cx, cy, cz);
+  return ls;
+}
+
+/** Build CSS2D floating label */
+function makeLabel(text, pos, colorHex) {
+  const div  = document.createElement('div');
+  div.className = 'label3d';
+  div.textContent = text.length > 28 ? text.slice(0,27)+'…' : text;
+  div.style.color = colorHex;
+  const obj  = new CSS2DObject(div);
+  obj.position.set(pos[0], pos[1], pos[2]);
+  return obj;
+}
+
+/** Build Points geometry from flat Float32Array, colored with a single color */
+function makeObjCloud(xyzFlat, colorHex) {
+  const n     = xyzFlat.length / 3;
+  const geo   = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(xyzFlat, 3));
+  // Per-vertex color (uniform)
+  const col   = hexToColor(colorHex);
+  const ca    = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { ca[i*3]=col.r; ca[i*3+1]=col.g; ca[i*3+2]=col.b; }
+  geo.setAttribute('color', new THREE.BufferAttribute(ca, 3));
+  const mat = new THREE.PointsMaterial({
+    size: 0.04, vertexColors: true, sizeAttenuation: true
+  });
+  return new THREE.Points(geo, mat);
+}
+
+/** Create a billboard Sprite from an image URL */
+function makeBillboard(url, pos) {
+  return new Promise(resolve => {
+    const tex = new THREE.TextureLoader().load(url,
+      tex => {
+        tex.colorSpace = THREE.SRGBColorSpace;
+        const w = tex.image ? tex.image.width  : 1;
+        const h = tex.image ? tex.image.height : 1;
+        const aspect = w / h;
+        const mat  = new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: 0.92 });
+        const spr  = new THREE.Sprite(mat);
+        const ht   = 0.8;
+        spr.scale.set(ht * aspect, ht, 1);
+        spr.position.set(pos[0], pos[1] + 0.6, pos[2]);
+        resolve(spr);
+      },
+      undefined,
+      () => resolve(null)
+    );
+  });
+}
+
+// ─── Load background cloud from bg_cloud.bin ─────────────────────────────────
+async function loadBgCloud(nPts) {
+  try {
+    const resp = await fetch('bg_cloud.bin');
+    if (!resp.ok) return;
+    const buf  = await resp.arrayBuffer();
+    // Header: 8 bytes magic + 4 bytes count + 4 bytes reserved = 16 bytes
+    const magic = new Uint8Array(buf, 0, 8);
+    const count = new Uint32Array(buf, 8, 1)[0];
+    const data  = new DataView(buf, 16);
+
+    const pos   = new Float32Array(count * 3);
+    const col   = new Float32Array(count * 3);
+    const STRIDE = 16; // 4+4+4+1+1+1+1
+    for (let i = 0; i < count; i++) {
+      const off = i * STRIDE;
+      pos[i*3]   =  data.getFloat32(off,     true);
+      pos[i*3+1] = fy(data.getFloat32(off + 4, true));   // flip Y
+      pos[i*3+2] =  data.getFloat32(off + 8, true);
+      col[i*3]   = data.getUint8(off + 12) / 255;
+      col[i*3+1] = data.getUint8(off + 13) / 255;
+      col[i*3+2] = data.getUint8(off + 14) / 255;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
+    const mat = new THREE.PointsMaterial({ size: 0.025, vertexColors: true, sizeAttenuation: true });
+    bgCloud = new THREE.Points(geo, mat);
+    bgCloud.name = 'bg_cloud';
+    scene.add(bgCloud);
+    console.log(`[viewer] Background cloud: ${count.toLocaleString()} pts`);
+  } catch(e) {
+    console.warn('[viewer] Could not load bg_cloud.bin:', e);
+  }
+}
+
+// ─── Load objects ─────────────────────────────────────────────────────────────
+async function loadObjects() {
+  const resp = await fetch('objects.json');
+  objects    = await resp.json();
+
+  // Flip Y on all world coordinates so scene is Y-up
+  for (const obj of objects) {
+    obj.mean[1]     = fy(obj.mean[1]);
+    if (obj.bbox_min) obj.bbox_min[1] = fy(obj.bbox_min[1]);
+    if (obj.bbox_max) obj.bbox_max[1] = fy(obj.bbox_max[1]);
+  }
+
+  console.log(`[viewer] ${objects.length} objects loaded`);
+
+  const billboardPromises = [];
+
+  for (let ki = 0; ki < objects.length; ki++) {
+    const obj = objects[ki];
+    const mesh = { id: obj.id, pts: null, box: null, label: null, billboard: null };
+
+    // Point cloud
+    if (obj.pts_b64) {
+      const xyz  = b64ToXYZ(obj.pts_b64);
+      const pts  = makeObjCloud(xyz, obj.color);
+      pts.userData.objectIndex = ki;
+      pts.userData.objectId    = obj.id;
+      scene.add(pts);
+      mesh.pts = pts;
+    }
+
+    // Bounding box
+    if (obj.bbox_min && obj.bbox_max) {
+      const box = makeBox(obj.bbox_min, obj.bbox_max, hexToColor(obj.color));
+      box.userData.objectIndex = ki;
+      scene.add(box);
+      mesh.box = box;
+    }
+
+    // Floating label (lifted above bbox top — Y is now Y-up)
+    const labelY = obj.bbox_max ? Math.max(obj.bbox_min[1], obj.bbox_max[1]) + 0.08 : obj.mean[1] + 0.3;
+    const label = makeLabel(obj.label, [obj.mean[0], labelY, obj.mean[2]], obj.color);
+    scene.add(label);
+    mesh.label = label;
+
+    objMeshes.push(mesh);
+
+    // Billboard (async texture load)
+    if (obj.crop_rel) {
+      const p = makeBillboard(obj.crop_rel, obj.mean).then(spr => {
+        if (spr) { scene.add(spr); mesh.billboard = spr; }
+      });
+      billboardPromises.push(p);
+    }
+
+    if (ki % 50 === 0) setProgress(40 + (ki / objects.length) * 40);
+  }
+
+  await Promise.allSettled(billboardPromises);
+  console.log('[viewer] All billboards loaded');
+}
+
+// ─── Sidebar rendering ────────────────────────────────────────────────────────
+function buildSidebar(filter) {
+  const listEl = document.getElementById('obj-list');
+  const q      = (filter || '').toLowerCase();
+  const filtered = q
+    ? objects.filter(o => o.label.toLowerCase().includes(q))
+    : objects;
+
+  document.getElementById('obj-count').textContent = filtered.length;
+  listEl.innerHTML = '';
+
+  for (const obj of filtered) {
+    const ki  = obj.index;
+    const div = document.createElement('div');
+    div.className = 'obj-item' + (ki === selectedIdx ? ' selected' : '');
+    div.dataset.ki = ki;
+
+    // Swatch
+    const sw = document.createElement('div');
+    sw.className = 'obj-swatch';
+    sw.style.background = obj.color;
+
+    // Thumbnail
+    let thumbEl;
+    if (obj.crop_rel) {
+      thumbEl = document.createElement('img');
+      thumbEl.className = 'obj-thumb';
+      thumbEl.src = obj.crop_rel;
+      thumbEl.alt = obj.label;
+    } else {
+      thumbEl = document.createElement('div');
+      thumbEl.className = 'obj-thumb-placeholder';
+      thumbEl.textContent = '🔲';
+    }
+
+    // Info
+    const info = document.createElement('div');
+    info.className = 'obj-info';
+    const lbl = document.createElement('div');
+    lbl.className = 'obj-label';
+    lbl.textContent = obj.label;
+    const meta = document.createElement('div');
+    meta.className = 'obj-meta';
+    meta.textContent = `id:${obj.id} · ${obj.n_pts}pts`;
+
+    info.append(lbl, meta);
+    div.append(sw, thumbEl, info);
+    div.addEventListener('click', () => selectObject(ki, true));
+    listEl.appendChild(div);
+  }
+}
+
+// ─── Object selection ─────────────────────────────────────────────────────────
+function selectObject(ki, flyTo) {
+  // Deselect previous
+  if (selectedIdx >= 0 && selectedIdx < objMeshes.length) {
+    const prev = objMeshes[selectedIdx];
+    if (prev.pts) prev.pts.material.size = 0.04;
+    if (prev.box) prev.box.material.opacity = 0.4;
+  }
+
+  selectedIdx = ki;
+
+  // Highlight
+  if (ki >= 0 && ki < objMeshes.length) {
+    const cur = objMeshes[ki];
+    if (cur.pts) cur.pts.material.size = 0.1;
+    if (cur.box) cur.box.material.opacity = 1.0;
+  }
+
+  // Update sidebar selection highlight
+  document.querySelectorAll('.obj-item').forEach(el => {
+    el.classList.toggle('selected', parseInt(el.dataset.ki) === ki);
+  });
+
+  // Fly camera to object
+  if (flyTo && ki >= 0) {
+    const obj = objects[ki];
+    const target = new THREE.Vector3(...obj.mean);
+    const offset = 6;
+    controls.target.copy(target);
+    camera.position.set(obj.mean[0] + offset, obj.mean[1] + offset, obj.mean[2] + offset);
+    controls.update();
+  }
+
+  // Show detail panel
+  if (ki >= 0) showDetail(ki);
+  else hideDetail();
+}
+
+function showDetail(ki) {
+  const obj = objects[ki];
+  const panel = document.getElementById('detail');
+  panel.classList.add('visible');
+  document.getElementById('detail-title').textContent = `${obj.label}  (id: ${obj.id})`;
+  const m = obj.mean;
+  document.getElementById('detail-meta').innerHTML =
+    `<b>XYZ:</b> ${m[0].toFixed(2)}, ${m[1].toFixed(2)}, ${m[2].toFixed(2)} m &nbsp;·&nbsp; ` +
+    `<b>Stella pts:</b> ${obj.n_pts} &nbsp;·&nbsp; ` +
+    `<b>Class id:</b> ${obj.class_id}`;
+
+  const votesEl = document.getElementById('detail-votes');
+  if (obj.vote_summary && Object.keys(obj.vote_summary).length) {
+    const parts = Object.entries(obj.vote_summary).map(([l,w]) => `${l}:${w}`).join('  ');
+    votesEl.textContent = 'Votes: ' + parts;
+  } else {
+    votesEl.textContent = '';
+  }
+
+  const img   = document.getElementById('detail-crop');
+  const ph    = document.getElementById('detail-crop-placeholder');
+  if (obj.crop_rel) {
+    img.src = obj.crop_rel;
+    img.style.display = 'block';
+    ph.style.display  = 'none';
+  } else {
+    img.style.display = 'none';
+    ph.style.display  = 'flex';
+  }
+
+  // Scroll sidebar item into view
+  const item = document.querySelector(`.obj-item[data-ki="${ki}"]`);
+  if (item) item.scrollIntoView({ block: 'nearest' });
+}
+
+function hideDetail() {
+  document.getElementById('detail').classList.remove('visible');
+}
+
+// ─── Isolation mode ───────────────────────────────────────────────────────────
+function toggleIsolation(ki) {
+  if (isolatedIdx === ki) {
+    // Exit isolation
+    isolatedIdx = -1;
+    document.getElementById('isolation-badge').style.display = 'none';
+    applyLayerVisibility();
+  } else {
+    isolatedIdx = ki;
+    document.getElementById('isolation-badge').style.display = 'block';
+    // Show only selected, hide all others
+    for (let i = 0; i < objMeshes.length; i++) {
+      const m   = objMeshes[i];
+      const vis = i === ki;
+      if (m.pts)       m.pts.visible       = vis && layers['obj-pts'];
+      if (m.box)       m.box.visible       = vis && layers['boxes'];
+      if (m.label)     m.label.visible     = vis && layers['labels'];
+      if (m.billboard) m.billboard.visible = vis && layers['billboards'];
+    }
+    if (bgCloud) bgCloud.visible = false;
+  }
+}
+
+// ─── Layer visibility ─────────────────────────────────────────────────────────
+function applyLayerVisibility() {
+  if (bgCloud) bgCloud.visible = layers['bg'];
+  for (const m of objMeshes) {
+    const show = isolatedIdx < 0 || objMeshes.indexOf(m) === isolatedIdx;
+    if (m.pts)       m.pts.visible       = show && layers['obj-pts'];
+    if (m.box)       m.box.visible       = show && layers['boxes'];
+    if (m.label)     m.label.visible     = show && layers['labels'];
+    if (m.billboard) m.billboard.visible = show && layers['billboards'];
+  }
+}
+
+// ─── Click / raycasting ───────────────────────────────────────────────────────
+const raycaster = new THREE.Raycaster();
+raycaster.params.Points.threshold = 0.06;  // click radius in world units
+
+renderer.domElement.addEventListener('click', e => {
+  const rect  = renderer.domElement.getBoundingClientRect();
+  const mouse = new THREE.Vector2(
+    ((e.clientX - rect.left) / rect.width)  * 2 - 1,
+    -((e.clientY - rect.top)  / rect.height) * 2 + 1,
+  );
+  raycaster.setFromCamera(mouse, camera);
+
+  // Only test per-object Points (fast — 329 geometries × ≤500 pts)
+  const testObjs = objMeshes
+    .filter(m => m.pts && m.pts.visible)
+    .map(m => m.pts);
+  const hits = raycaster.intersectObjects(testObjs, false);
+
+  const now = Date.now();
+  if (hits.length) {
+    const ki = hits[0].object.userData.objectIndex;
+    const dbl = now - lastClickTime < 300 && ki === selectedIdx;
+    lastClickTime = now;
+    if (dbl) {
+      toggleIsolation(ki);
+    } else {
+      selectObject(ki, false);
+    }
+  } else if (now - lastClickTime > 300) {
+    // Click on empty space — deselect
+    selectObject(-1, false);
+  }
+  lastClickTime = now;
+});
+
+// ─── UI controls ─────────────────────────────────────────────────────────────
+document.querySelectorAll('.toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const layer = btn.dataset.layer;
+    layers[layer] = !layers[layer];
+    btn.classList.toggle('active', layers[layer]);
+    applyLayerVisibility();
+  });
+});
+
+document.getElementById('search').addEventListener('input', e => {
+  buildSidebar(e.target.value);
+});
+
+document.getElementById('detail-close').addEventListener('click', () => {
+  hideDetail();
+  selectObject(-1, false);
+});
+
+// ─── Resize ───────────────────────────────────────────────────────────────────
+function onResize() {
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h);
+  css2dRenderer.setSize(w, h);
+}
+window.addEventListener('resize', onResize);
+onResize();
+
+// ─── Render loop ──────────────────────────────────────────────────────────────
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+  css2dRenderer.render(scene, camera);
+}
+animate();
+
+// ─── Centre camera on scene after load ───────────────────────────────────────
+function centreCamera(objects) {
+  if (!objects.length) return;
+  const pts = objects.map(o => o.mean);
+  const xs  = pts.map(p => p[0]), ys = pts.map(p => p[1]), zs = pts.map(p => p[2]);
+  const cx  = (Math.min(...xs) + Math.max(...xs)) / 2;
+  const cy  = (Math.min(...ys) + Math.max(...ys)) / 2;
+  const cz  = (Math.min(...zs) + Math.max(...zs)) / 2;
+  const span = Math.max(
+    Math.max(...xs) - Math.min(...xs),
+    Math.max(...zs) - Math.min(...zs),
+  );
+  controls.target.set(cx, cy, cz);
+  camera.position.set(cx, cy + span * 0.6, cz + span * 0.8);
+  controls.update();
+}
+
+// ─── Boot ─────────────────────────────────────────────────────────────────────
+async function boot() {
+  try {
+    setProgress(5);
+
+    // 1. metadata
+    const metaResp = await fetch('metadata.json');
+    metadata = await metaResp.json();
+    document.getElementById('stats').textContent =
+      `${metadata.n_objects_active} objs · ${(metadata.n_bg_pts || 0).toLocaleString()} bg pts`;
+    setProgress(15);
+
+    // 2. Background cloud
+    if (metadata.has_bg_cloud) {
+      await loadBgCloud(metadata.n_bg_pts);
+    }
+    setProgress(40);
+
+    // 3. Objects
+    await loadObjects();
+    setProgress(90);
+
+    // 4. Sidebar
+    buildSidebar('');
+    setProgress(100);
+
+    // 5. Camera
+    centreCamera(objects);
+
+    // 6. Hide loading bar
+    setTimeout(() => { document.getElementById('loading-bar').style.display = 'none'; }, 600);
+
+    console.log('[viewer] Ready');
+  } catch(err) {
+    console.error('[viewer] Boot error:', err);
+    document.getElementById('stats').textContent = 'Error loading data — check console';
+  }
+}
+
+boot();
+</script>
+</body>
+</html>

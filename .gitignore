@@ -3,6 +3,10 @@ outputs/phase1/**
 outputs/phase1.5/**
 outputs/phase2/**
 outputs/phase3/**
+outputs/phase3.5/**
+outputs/phase4/**
+outputs/runs/**
+outputs/validation/**
 outputs/logs/**
 !outputs/**/.gitkeep
 

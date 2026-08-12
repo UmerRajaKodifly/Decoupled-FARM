@@ -1,6 +1,6 @@
 # Construction Spatial Memory Pipeline
 
-**End-to-end:** equirectangular 360° walkthrough video (`.mp4`) → 3D open-vocabulary object map (`scene_state.pt`) + HTML / image visualizations.
+**End-to-end:** equirectangular 360° walkthrough video (`.mp4`) → 3D open-vocabulary object map → interactive WebGL viewer.
 
 **Repository root:**
 
@@ -16,14 +16,14 @@
 2. [Prerequisites](#2-prerequisites)
 3. [Repository layout](#3-repository-layout)
 4. [One-time setup](#4-one-time-setup)
-5. [Run the full pipeline](#5-run-the-full-pipeline)
-6. [Validation & point-cloud visualization](#6-validation--point-cloud-visualization)
-7. [Outputs reference](#7-outputs-reference)
-8. [Partial re-runs & resumability](#8-partial-re-runs--resumability)
-9. [Tunable environment variables](#9-tunable-environment-variables)
-10. [Logging](#10-logging)
-11. [Troubleshooting](#11-troubleshooting)
-12. [What this repo intentionally excludes](#12-what-this-repo-intentionally-excludes)
+5. [Run end-to-end on a video](#5-run-end-to-end-on-a-video)
+6. [Open the 3D viewer](#6-open-the-3d-viewer)
+7. [Validation & other visualizations](#7-validation--other-visualizations)
+8. [Outputs reference](#8-outputs-reference)
+9. [Partial re-runs & resumability](#9-partial-re-runs--resumability)
+10. [Tunable environment variables](#10-tunable-environment-variables)
+11. [Logging](#11-logging)
+12. [Troubleshooting](#12-troubleshooting)
 
 ---
 
@@ -31,31 +31,37 @@
 
 | Stage | Name | Role |
 |-------|------|------|
-| **Phase 1** | Stella VSLAM Dense | Monocular equirect SLAM → keyframes, poses, sparse landmarks (`out.db`, trajectories) |
-| **Phase 1.5** | Depth Anything V3 (metric) | Per-keyframe cube faces + **metric** depth + FARM `frames.json` |
-| **Phase 2** | Detect / segment / embed | YOLOE open-vocab masks + 3D Gaussians + DINOv3 features per face |
-| **Phase 3** | Associate / fuse / map | Filter → neighbors → union-find → fused `scene_state.pt` (object memory) |
-| **Validate** | Host-side scripts | Metrics, top-down scatter PNGs, interactive `overlays_3d.html` |
-
-Captioning, pruning, and language query retrieval are **not** part of this tree (Phase 4 / 5 later).
+| **Phase 1** | Stella VSLAM Dense | Monocular equirect SLAM → keyframes, poses, dense cloud (`out.db`, `out.ply`) |
+| **Phase 1.5** | Depth Anything V3 (metric) | Per-keyframe cube faces + metric depth + `frames.json` |
+| **Phase 2** | Detect / segment / embed | YOLOE open-vocab masks + 3D Gaussians + DINOv3 features |
+| **Phase 3** | Associate / fuse / map | Multi-frame fusion → `scene_state.pt` (object memory) |
+| **Phase 3.5** | Stella geometry | Refine object geometry from Stella dense cloud |
+| **Phase 4a** | Best-view crops | Per-object RGB crops for inspection / captioning |
+| **3D viewer** | WebGL (Three.js) | Full Stella cloud + colored object pts + crop billboards |
 
 ```text
-inputs/video.mp4
+inputs/scan.mp4
     │
     ▼ Phase 1 (Docker: stella)
-outputs/phase1/  {out.db, keyframes/, traj/, out.ply}
+outputs/runs/<RUN_ID>/phase1/  {out.db, keyframes/, out.ply}
     │
     ▼ Phase 1.5 (Docker: da3)
-outputs/phase1.5/  {faces/, depth/, frames_json/}
+outputs/runs/<RUN_ID>/phase1.5/  {faces/, depth/, frames_json/}
     │
-    ▼ Phase 2 + 3 (Docker: farm)
-outputs/phase2/  detections_kf*.pt
-outputs/phase3/  scene_state.pt
+    ▼ Phases 2–4a (Docker: farm)
+outputs/runs/<RUN_ID>/phase2/   detections_kf*.pt
+outputs/runs/<RUN_ID>/phase3/   scene_state.pt
+outputs/runs/<RUN_ID>/phase3.5/ scene_state_stella.pt
+outputs/runs/<RUN_ID>/phase4/   crops/ + scene_state_with_crops.pt
     │
-    ▼ validate_phase2 / validate_phase3 (host conda)
-outputs/validation/phase2/overlays_3d.html
-outputs/validation/phase3/overlays_3d.html
+    ▼ 3D viewer data (auto-built inside farm container)
+outputs/runs/<RUN_ID>/validation/3d-viewer/
+    │
+    ▼ serve.py (host)
+http://127.0.0.1:8090
 ```
+
+Each run is isolated under `outputs/runs/<RUN_ID>/`. A symlink `outputs/latest` always points to the most recent run. Older flat-layout outputs (`outputs/phase1/`, etc.) are archived automatically into `outputs/runs/legacy_<timestamp>/` on the first new run.
 
 ---
 
@@ -63,17 +69,17 @@ outputs/validation/phase3/overlays_3d.html
 
 ### Hardware / OS
 
-- Linux host with **NVIDIA GPU** drivers installed
-- Enough disk for models + run data (expect **tens of GB** for Docker images alone on first build; Stella image is large and compiles C++)
+- Linux host with **NVIDIA GPU** drivers
+- Enough disk for models + run data (Docker images alone can be tens of GB on first build)
 
 ### Software
 
 | Tool | Notes |
 |------|--------|
-| **Docker** + **Docker Compose v2** | Required for Phases 1–3 |
+| **Docker** + **Docker Compose v2** | Phases 1–4a run in containers |
 | **NVIDIA Container Toolkit** | `docker run --gpus all …` must see the GPU |
 | **curl** or **wget** | Model bootstrap |
-| **Python 3.10** + **conda** (optional but recommended) | Host validation / HTML viz only |
+| **Python 3.10** + **conda** | Host validation + 3D viewer server |
 
 Check GPU in Docker:
 
@@ -84,9 +90,8 @@ docker run --rm --gpus all nvidia/cuda:12.4.1-base-ubuntu22.04 nvidia-smi
 ### Input video
 
 - Equirectangular (2:1) 360° monocular video (e.g. Insta360-style)
-- Dropped under `inputs/` as `.mp4` or `.mov`
-
-Default Stella config assumes the feed is resized to **1920×960** (`RESIZE=1920x960`) to match [`config/slam_config.yaml`](config/slam_config.yaml) (fast `dense_batch_1920` recipe).
+- Place under `inputs/` as `.mp4` or `.mov`
+- Default Stella config resizes to **1920×960** (`RESIZE=1920x960`)
 
 ---
 
@@ -94,41 +99,45 @@ Default Stella config assumes the feed is resized to **1920×960** (`RESIZE=1920
 
 ```text
 repo/
-├── README.md                 ← this file
-├── bootstrap_models.sh       ← download / copy model weights → models/
-├── run_pipeline.sh           ← full e2e: stella → da3 → farm
-├── docker-compose.yml        ← three GPU services
-├── config/
-│   └── slam_config.yaml      ← Stella SLAM + PatchMatch (1920×960 equirect)
-├── vocab/
-│   └── construction_vocab.txt
-├── inputs/                   ← put your .mp4 here (gitignored contents)
+├── README.md
+├── bootstrap_models.sh       ← download model weights → models/
+├── run_pipeline.sh           ← full e2e orchestrator
+├── docker-compose.yml
+├── config/slam_config.yaml
+├── vocab/construction_vocab.txt
+├── inputs/                   ← put your .mp4 here
 ├── models/                   ← weights (gitignored; fill via bootstrap)
 ├── outputs/
-│   ├── phase1/               ← SLAM
-│   ├── phase1.5/             ← DA3 depths + frames.json
-│   ├── phase2/               ← detection packs
-│   ├── phase3/               ← scene_state.pt
-│   ├── validation/           ← HTML / PNG diagnostics (host)
-│   └── logs/run_*/           ← per-run logs
-├── phase1-slam/              ← Stella source + Dockerfile
-├── phase1.5-depth/           ← DA3 source + stella_to_da3_depth.py
-├── phase2/                   ← detect-segment-embed
-├── phase3/                   ← associate-fuse-map
-├── farm_src/                 ← FARM scene_graph + YOLOE (git stripped)
-├── common/                   ← path helpers + pipeline logger
+│   ├── latest                → symlink to most recent run
+│   └── runs/
+│       └── run_YYYYMMDD_HHMMSS/
+│           ├── phase1/ … phase4/
+│           └── validation/
+│               ├── phase2/ … phase4/
+│               └── 3d-viewer/   ← WebGL viewer data
+├── 3d-viewer/
+│   ├── build_viewer_data.py  ← pack .pt + out.db → viewer assets
+│   ├── serve.py              ← HTTP server for the viewer
+│   └── static/index.html     ← Three.js viewer
+├── viser-viewer/             ← legacy Viser viewer (optional)
+├── phase1-slam/
+├── phase1.5-depth/
+├── phase2/
+├── phase3/
+├── phase3.5-stella-geometry/
+├── phase4-caption-best-view/
+├── farm_src/
+├── common/
 └── docker/
     ├── Dockerfile.farm
     └── farm_entrypoint.sh
 ```
 
-Vendored third-party trees are **not** git submodules: nested `.git` / `.github` / pre-commit configs are stripped so pushing **this** folder alone does not re-trigger upstream CI.
-
 ---
 
 ## 4. One-time setup
 
-All commands below assume:
+All commands assume:
 
 ```bash
 cd /home/kodifly/Desktop/farm-git/repo
@@ -140,18 +149,9 @@ cd /home/kodifly/Desktop/farm-git/repo
 bash bootstrap_models.sh
 ```
 
-Installs under `models/`:
+Installs under `models/`: ORB vocab, YOLOE, MobileCLIP, DINOv3, DA3 (optional offline cache).
 
-| Path | Purpose |
-|------|---------|
-| `models/orb_vocab.fbow` | Stella ORB vocabulary |
-| `models/yoloe/yoloe-v8l-seg.pt` | YOLOE segmentation |
-| `models/yoloe/yoloe-v8l-seg-pf.pt` | YOLOE prompt-free |
-| `models/mobileclip/mobileclip_blt.pt` | MobileCLIP text tower |
-| `models/dinov3-vits16/` | DINOv3 appearance features |
-| `models/da3metric-large/` | DA3METRIC-LARGE (optional offline cache) |
-
-Skip DA3 pre-download (will fetch at first Phase 1.5 run via Hugging Face):
+Skip DA3 pre-download (fetches from Hugging Face on first Phase 1.5 run):
 
 ```bash
 bash bootstrap_models.sh --skip-da3
@@ -160,330 +160,318 @@ bash bootstrap_models.sh --skip-da3
 ### 4.2 Place input video
 
 ```bash
-cp /path/to/your_scan.mp4 inputs/
-# example used in testing:
-# cp /home/kodifly/Desktop/stella-vslam-dense/inputs/scan.MP4 inputs/scan.mp4
+cp /path/to/your_scan.mp4 inputs/scan.mp4
 ```
-
-Or set an explicit name later: `VIDEO_FILE=scan.mp4`.
 
 ### 4.3 Build Docker images (first time; long)
 
 ```bash
-# Builds stella + da3 + farm when images are missing
-FORCE_BUILD=1 bash run_pipeline.sh
-# … or build without running:
 docker compose build
+```
+
+Or let `run_pipeline.sh` build automatically when images are missing. Force rebuild:
+
+```bash
+FORCE_BUILD=1 bash run_pipeline.sh
 ```
 
 Rebuild a single stage after Dockerfile changes:
 
 ```bash
+docker compose build farm    # after phase / viewer changes
 docker compose build da3
-docker compose build --no-cache da3   # if torch/deps look wrong
-docker compose build farm
 docker compose build stella
 ```
 
-### 4.4 Host env for validation (HTML / plots)
+### 4.4 Host conda env (validation + viewer)
 
-Phase 2/3 **validation** is intended to run on the host (Docker often writes phase outputs as `root`, which breaks writing into those dirs).
-
-Using the existing `farm-phase2` conda env (same deps as the original `pipeline/` work):
+The `farm-phase2` conda env is used for host-side validation and the 3D viewer server:
 
 ```bash
 conda activate farm-phase2
-# needs: torch, matplotlib, plotly, pillow, numpy
 python -c "import torch, matplotlib, plotly; print('ok')"
 ```
 
-If you do not have that env, use any Python 3.10 env with:
+If you do not have that env:
 
 ```bash
 pip install torch matplotlib plotly pillow numpy
 ```
 
-(Plotly is required for `overlays_3d.html`.)
-
 ---
 
-## 5. Run the full pipeline
+## 5. Run end-to-end on a video
 
-### 5.1 Standard full run
+### 5.1 Full run (recommended)
 
 ```bash
 cd /home/kodifly/Desktop/farm-git/repo
 
-# optional explicit video name
-export VIDEO_FILE=scan.mp4
+# place video first (if not already there)
+cp /path/to/your_scan.mp4 inputs/scan.mp4
 
-bash run_pipeline.sh
+# run everything: Stella → DA3 → Phase 2 → 3 → 3.5 → 4a → viewer data build
+VIDEO_FILE=scan.mp4 bash run_pipeline.sh
 ```
 
-This will:
+If `VIDEO_FILE` is omitted, the script auto-picks the first `.mp4` / `.mov` in `inputs/`.
 
-1. Resolve `VIDEO_FILE` (or auto-pick the first `.mp4` / `.mov` in `inputs/`)
-2. Create `PIPELINE_RUN_ID=run_YYYYMMDD_HHMMSS`
-3. Ensure models exist
-4. Build images if needed
-5. Run **stella → da3 → farm** sequentially (stops on first failure)
+**What happens:**
+
+1. Creates `PIPELINE_RUN_ID=run_YYYYMMDD_HHMMSS`
+2. Writes all outputs to `outputs/runs/<RUN_ID>/`
+3. Updates `outputs/latest` symlink
+4. Runs per-phase validation automatically
+5. Builds 3D viewer data at `outputs/runs/<RUN_ID>/validation/3d-viewer/`
 
 **Success criteria:**
 
-- `outputs/phase1/out.db` and `keyframes/` present  
-- `outputs/phase1.5/frames_json/frames.json` present  
-- `outputs/phase2/detections_kf*.pt` present  
-- **`outputs/phase3/scene_state.pt` present** ← main product  
+- `outputs/runs/<RUN_ID>/phase1/out.db`
+- `outputs/runs/<RUN_ID>/phase1.5/frames_json/frames.json`
+- `outputs/runs/<RUN_ID>/phase2/detections_kf*.pt`
+- `outputs/runs/<RUN_ID>/phase3/scene_state.pt`
+- `outputs/runs/<RUN_ID>/phase3.5/scene_state_stella.pt`
+- `outputs/runs/<RUN_ID>/phase4/crops/`
+- `outputs/runs/<RUN_ID>/validation/3d-viewer/metadata.json`
 
 ### 5.2 Smoke test (faster)
 
-Limit Phase 1.5 keyframes and skip more video frames:
-
 ```bash
-export VIDEO_FILE=scan.mp4
-export FRAME_STEP=4
-export MAX_KFS=20
-export WINDOW_SIZE=4
-bash run_pipeline.sh
+VIDEO_FILE=scan.mp4 FRAME_STEP=4 MAX_KFS=20 WINDOW_SIZE=4 bash run_pipeline.sh
 ```
 
-### 5.3 Force rebuild then run
+### 5.3 Skip stages already completed
 
 ```bash
-FORCE_BUILD=1 bash run_pipeline.sh
+# Re-run only farm stages (Phase 2–4a) on existing Stella + DA3 outputs
+SKIP_STELLA=1 SKIP_DA3=1 bash run_pipeline.sh
 ```
 
 ---
 
-## 6. Validation & point-cloud visualization
+## 6. Open the 3D viewer
 
-The Docker farm service does **not** emit HTML. After Phases 2 and 3 succeed, run the host validators. Write into **`outputs/validation/`** (user-owned) to avoid `PermissionError` on root-owned Docker volume dirs.
-
-### 6.1 Generate Phase 2 diagnostics (per-detection Gaussians)
+After a successful pipeline run, viewer data is already built. Start the server:
 
 ```bash
 cd /home/kodifly/Desktop/farm-git/repo
 conda activate farm-phase2
 
-mkdir -p outputs/validation/phase2
+# serves latest run automatically
+python 3d-viewer/serve.py --data-dir outputs/latest/validation/3d-viewer
+```
+
+Or point at a specific run:
+
+```bash
+python 3d-viewer/serve.py \
+  --data-dir outputs/runs/run_YYYYMMDD_HHMMSS/validation/3d-viewer \
+  --port 8090
+```
+
+Then open **http://127.0.0.1:8090** in your browser (the server can auto-open it).
+
+**Viewer features:**
+
+- Full Stella background cloud (millions of pts, no downsampling in the viewer)
+- Per-object colored point clouds from Phase 3.5
+- Wireframe bounding boxes, floating class labels
+- Crop billboards floating above each object
+- Click object → detail panel with crop image; double-click → isolation mode
+- Layer toggles: background / object pts / boxes / labels / crops
+- Search/filter objects by label in the sidebar
+
+**Rebuild viewer data manually** (e.g. after tweaking Phase 3.5 without re-running farm):
+
+```bash
+conda activate farm-phase2
+python 3d-viewer/build_viewer_data.py \
+  --stella-state outputs/latest/phase3.5/scene_state_stella.pt \
+  --db-path      outputs/latest/phase1/out.db \
+  --crops-dir    outputs/latest/phase4/crops \
+  --vocab-file   vocab/construction_vocab.txt \
+  --output-dir   outputs/latest/validation/3d-viewer
+```
+
+### Legacy Viser viewer (optional)
+
+```bash
+conda activate farm-phase2
+python viser-viewer/run_viewer.py \
+  --scene-state outputs/latest/phase4/scene_state_with_crops.pt \
+  --crops-dir   outputs/latest/phase4/crops \
+  --vocab       vocab/construction_vocab.txt \
+  --cube-opacity 0.12
+# open http://127.0.0.1:8080
+```
+
+---
+
+## 7. Validation & other visualizations
+
+Per-phase validation runs automatically during the pipeline. Key artifacts:
+
+| Phase | Open / inspect |
+|-------|----------------|
+| Phase 3 | `outputs/latest/validation/phase3/overlays_3d.html` |
+| Phase 3.5 | `outputs/latest/validation/phase3.5/summary.txt` |
+| Phase 4 | `outputs/latest/validation/phase4/crop_grid.html` |
+| Stella cloud QA | `outputs/latest/validation/stella_cloud/topdown.png` |
+| Stella cloud QA | `outputs/latest/validation/stella_cloud/labeled_cloud.ply` (CloudCompare) |
+
+Export labeled Stella cloud manually:
+
+```bash
+conda activate farm-phase2
+python phase3.5-stella-geometry/export_labeled_cloud.py \
+  --stella-state outputs/latest/phase3.5/scene_state_stella.pt \
+  --db-path      outputs/latest/phase1/out.db \
+  --output-dir   outputs/latest/validation/stella_cloud \
+  --isolate-objects
+```
+
+Re-run host validators manually:
+
+```bash
+conda activate farm-phase2
+export PYTHONPATH="$(pwd)/common:$(pwd)/farm_src/src:${PYTHONPATH:-}"
 
 python phase2/validate_phase2.py \
-  --det-dir outputs/phase2 \
-  --out-dir outputs/validation/phase2
-```
-
-### 6.2 Generate Phase 3 diagnostics (fused object map)
-
-```bash
-cd /home/kodifly/Desktop/farm-git/repo
-conda activate farm-phase2
-
-export PYTHONPATH="$(pwd)/common:$(pwd)/farm_src/src:${PYTHONPATH:-}"
-mkdir -p outputs/validation
-
-# Validators expect scene_state.pt under --output-dir; Docker phase3 may be root-owned
-ln -sfn "$(pwd)/outputs/phase3/scene_state.pt" outputs/validation/scene_state.pt
-ln -sfn "$(pwd)/outputs/phase3/run_stats.json" outputs/validation/run_stats.json
+  --det-dir outputs/latest/phase2 \
+  --out-dir outputs/latest/validation/phase2
 
 python phase3/validate_phase3.py \
-  --output-dir outputs/validation \
+  --output-dir outputs/latest/phase3 \
   --vocab-file vocab/construction_vocab.txt
-
-# validate_phase3 writes under <output-dir>/validation/
-mkdir -p outputs/validation/phase3
-mv -f outputs/validation/validation/* outputs/validation/phase3/ 2>/dev/null || true
-rmdir outputs/validation/validation 2>/dev/null || true
 ```
-
-### 6.3 Open the interactive point clouds
-
-**Phase 2 — all per-detection 3D Gaussians:**
-
-```bash
-xdg-open /home/kodifly/Desktop/farm-git/repo/outputs/validation/phase2/overlays_3d.html
-```
-
-Also useful:
-
-```bash
-xdg-open /home/kodifly/Desktop/farm-git/repo/outputs/validation/phase2/world_xy_scatter.png
-```
-
-**Phase 3 — fused objects (final map):**
-
-```bash
-xdg-open /home/kodifly/Desktop/farm-git/repo/outputs/validation/phase3/overlays_3d.html
-```
-
-Also useful:
-
-```bash
-xdg-open /home/kodifly/Desktop/farm-git/repo/outputs/validation/phase3/world_xy_scatter.png
-cat /home/kodifly/Desktop/farm-git/repo/outputs/validation/phase3/summary.txt
-```
-
-If `xdg-open` is unavailable, open the HTML paths in Chrome / Firefox manually.
-
-### 6.4 What “good” looks like
-
-| Artifact | Healthy signal |
-|----------|----------------|
-| Phase 2 `world_xy_scatter.png` | Detections form a coherent site footprint (metres-scale, not a blob at origin) |
-| Phase 2 `overlays_3d.html` | Hover labels look construction-plausible; outliers exist but are not chaos |
-| Phase 3 `object_count_growth.png` | Object count grows then plateaus |
-| Phase 3 `summary.txt` | `Overall: PASS`; active objects ≪ total Phase 2 detections (merging worked) |
-| Phase 3 footprint | On the order of site size (e.g. tens of metres), not kilometres |
 
 ---
 
-## 7. Outputs reference
+## 8. Outputs reference
 
 | Path | Contents |
 |------|----------|
-| `outputs/phase1/out.db` | Stella map DB (keyframes, landmarks) |
-| `outputs/phase1/keyframes/` | KF RGB (`image*.png`) |
-| `outputs/phase1/traj/keyframe_trajectory.txt` | TUM keyframe poses |
-| `outputs/phase1/out.ply` | Stella dense point cloud |
-| `outputs/phase1.5/faces/` | Cube-face JPEGs |
-| `outputs/phase1.5/depth/` | Face depths (float32 metres `.npy`) |
-| `outputs/phase1.5/frames_json/frames.json` | Phase 2 input manifest |
-| `outputs/phase2/detections_kf*.pt` | Per-keyframe packs (means, cov6, features, masks, …) |
-| `outputs/phase3/scene_state.pt` | **Global object memory** |
-| `outputs/phase3/run_stats.json` | Per-keyframe merge counters |
-| `outputs/validation/phase2/` | Histograms, `overlays_3d.html`, `summary.txt` |
-| `outputs/validation/phase3/` | Growth plots, `overlays_3d.html`, `metrics.json`, `summary.txt` |
-| `outputs/logs/run_*/` | Stage logs + `pipeline.log` + elapsed timers |
+| `outputs/runs/<RUN_ID>/phase1/out.db` | Stella map DB + dense points |
+| `outputs/runs/<RUN_ID>/phase1/out.ply` | Stella dense point cloud |
+| `outputs/runs/<RUN_ID>/phase1.5/frames_json/frames.json` | Phase 2 input manifest |
+| `outputs/runs/<RUN_ID>/phase2/detections_kf*.pt` | Per-keyframe detection packs |
+| `outputs/runs/<RUN_ID>/phase3/scene_state.pt` | Fused object memory |
+| `outputs/runs/<RUN_ID>/phase3.5/scene_state_stella.pt` | Geometry-refined memory |
+| `outputs/runs/<RUN_ID>/phase4/scene_state_with_crops.pt` | Memory + best-view crop paths |
+| `outputs/runs/<RUN_ID>/phase4/crops/` | Per-object RGB crop JPEGs |
+| `outputs/runs/<RUN_ID>/validation/3d-viewer/` | WebGL viewer data (`metadata.json`, `objects.json`, `bg_cloud.bin`) |
+| `outputs/logs/run_*/` | Per-run stage logs + elapsed timers |
 
 ---
 
-## 8. Partial re-runs & resumability
-
-Phase 1 is the slowest. After a successful Stella run you can resume later stages only.
+## 9. Partial re-runs & resumability
 
 ```bash
 cd /home/kodifly/Desktop/farm-git/repo
-export PIPELINE_RUN_ID=run_YYYYMMDD_HHMMSS   # optional; for log grouping
-export VIDEO_FILE=scan.mp4                     # only needed for stella
+export VIDEO_FILE=scan.mp4
 ```
 
 | Goal | Command |
 |------|---------|
 | Re-run Phase 1.5 only | `docker compose run --rm da3` |
-| Re-run Phase 2+3 only | `docker compose run --rm farm` |
-| Re-run full stack | `bash run_pipeline.sh` |
-| Rebuild DA3 image after dep fix | `docker compose build da3` then `docker compose run --rm da3` |
+| Re-run Phase 2–4a only | `SKIP_STELLA=1 SKIP_DA3=1 bash run_pipeline.sh` |
+| Re-run full stack | `VIDEO_FILE=scan.mp4 bash run_pipeline.sh` |
+| Compare runs | `ls outputs/runs/` |
 
-Phase 2 skips existing `detections_kf*.pt` files (resume-friendly). Delete them to force re-detect:
+Phase 2 skips existing `detections_kf*.pt` files. Delete them to force re-detect:
 
 ```bash
-# careful: root-owned files may need sudo
-sudo rm -f outputs/phase2/detections_kf*.pt
+sudo rm -f outputs/runs/<RUN_ID>/phase2/detections_kf*.pt
 ```
 
 ---
 
-## 9. Tunable environment variables
+## 10. Tunable environment variables
 
 | Variable | Default | Meaning |
 |----------|---------|---------|
 | `VIDEO_FILE` | first `inputs/*.{mp4,mov}` | Video filename under `inputs/` |
-| `RESIZE` | `1920x960` | Stella input size (must match slam config) |
+| `RESIZE` | `1920x960` | Stella input size |
 | `FRAME_STEP` | `2` | Use every Nth video frame in Stella |
 | `WINDOW_SIZE` | `4` | DA3 temporal window size |
-| `MAX_KFS` | *(all)* | Cap keyframes in Phase 1.5 (smoke tests) |
-| `DA3_MODEL` | HF id or `/models/da3metric-large` | DA3 weights path / hub id |
+| `MAX_KFS` | *(all)* | Cap keyframes in Phase 1.5 |
 | `YOLOE_CONF` | `0.35` | Detection confidence threshold |
 | `KF_STRIDE` | `1` | Phase 2: every Nth keyframe |
 | `DEVICE` | `cuda` | Phase 2/3 torch device |
-| `PIPELINE_RUN_ID` | auto timestamp | Log namespace under `outputs/logs/` |
-| `FORCE_BUILD` | `0` | Set `1` to rebuild images before run |
+| `PIPELINE_RUN_ID` | auto timestamp | Run namespace under `outputs/runs/` |
+| `FORCE_BUILD` | `0` | Set `1` to rebuild Docker images |
+| `SKIP_STELLA` | `0` | Set `1` to skip Phase 1 |
+| `SKIP_DA3` | `0` | Set `1` to skip Phase 1.5 |
+| `SKIP_FARM` | `0` | Set `1` to skip Phases 2–4a |
+| `STRICT_VALIDATE` | `0` | Set `1` to abort on validation failure |
 
 Example:
 
 ```bash
-VIDEO_FILE=scan.mp4 FRAME_STEP=2 YOLOE_CONF=0.35 bash run_pipeline.sh
+VIDEO_FILE=scan.mp4 YOLOE_CONF=0.35 KF_STRIDE=2 bash run_pipeline.sh
 ```
 
 ---
 
-## 10. Logging
+## 11. Logging
 
-Each full run creates:
+Each run creates:
 
 ```text
 outputs/logs/run_YYYYMMDD_HHMMSS/
-├── pipeline.log          # merged timeline + final summary
+├── pipeline.log
 ├── phase1-slam.log
 ├── phase1.5-depth.log
 ├── phase2.log
 ├── phase3.log
-└── *.elapsed             # stage wall times (seconds)
+├── phase3.5.log
+├── phase4a.log
+└── *.elapsed
 ```
-
-Lines include ISO-ish timestamps and stage tags. Phase 1.5 / 2 / 3 emit **tqdm** progress bars on the console (also captured in stage logs).
-
----
-
-## 11. Troubleshooting
-
-| Symptom | Likely fix |
-|---------|------------|
-| `ERROR: no video found` in Stella | Put a file in `inputs/`; `VIDEO_FILE` bare name is rewritten to `/inputs/<name>` after path fix |
-| `missing models/...` | `bash bootstrap_models.sh` |
-| `ModuleNotFoundError: moviepy` / `addict` in DA3 | Rebuild: `docker compose build da3` |
-| `operator torchvision::nms does not exist` | Torch / torchvision mismatch — rebuild with `--no-cache`: `docker compose build --no-cache da3` |
-| Pipeline dies after Stella on DA3 | Stella outputs intact; only re-run `docker compose run --rm da3` |
-| `Permission denied` writing into `outputs/phase2` | Root-owned Docker volumes — write validation to `outputs/validation/…` |
-| Farm image huge (~14 GB) | Expected with CUDA **devel** base + torch; slim later if desired; does not block correctness |
-| GPU not visible | Install NVIDIA Container Toolkit; verify with `nvidia-smi` inside `docker run --gpus all` |
 
 Inspect last run:
 
 ```bash
-ls -lt outputs/logs | head
 less outputs/logs/run_*/pipeline.log
 ```
 
 ---
 
-## 12. What this repo intentionally excludes
+## 12. Troubleshooting
 
-- **No DAP** (relative / inconsistent depth) — metric path uses **DA3 only**
-- **No FARM ROS / vLLM / captioning servers** in the farm image
-- **No automated Phase 4 captions or Phase 5 retrieval** yet
-- **No upstream git CI hooks** inside vendored Stella / DA3 / FARM copies
+| Symptom | Likely fix |
+|---------|------------|
+| `ERROR: no video found` | Put a file in `inputs/` or set `VIDEO_FILE=scan.mp4` |
+| `missing models/...` | `bash bootstrap_models.sh` |
+| GPU not visible | Install NVIDIA Container Toolkit; verify with `nvidia-smi` inside Docker |
+| Viewer shows blank / 404 crops | Rebuild viewer data: `python 3d-viewer/build_viewer_data.py --output-dir outputs/latest/validation/3d-viewer` |
+| Scene appears upside-down in viewer | Hard-refresh browser (`Ctrl+Shift+R`); Y-flip is applied at load time |
+| `Permission denied` on outputs | Docker writes as root; use `outputs/runs/<RUN_ID>/` paths or `sudo` for cleanup |
+| Farm image rebuild needed after code changes | `docker compose build farm` then re-run |
 
 ---
 
-## Quick reference card
+## Quick reference
 
 ```bash
 cd /home/kodifly/Desktop/farm-git/repo
 
 # ── once ──
 bash bootstrap_models.sh
-cp /path/to/scan.mp4 inputs/
+cp /path/to/scan.mp4 inputs/scan.mp4
 docker compose build          # optional; run_pipeline builds if missing
+conda activate farm-phase2
 
-# ── map ──
+# ── end-to-end on a video ──
 VIDEO_FILE=scan.mp4 bash run_pipeline.sh
 
-# ── viz ──
-conda activate farm-phase2
-python phase2/validate_phase2.py --det-dir outputs/phase2 --out-dir outputs/validation/phase2
-
-export PYTHONPATH="$(pwd)/common:$(pwd)/farm_src/src"
-ln -sfn "$(pwd)/outputs/phase3/scene_state.pt" outputs/validation/scene_state.pt
-ln -sfn "$(pwd)/outputs/phase3/run_stats.json" outputs/validation/run_stats.json
-python phase3/validate_phase3.py --output-dir outputs/validation --vocab-file vocab/construction_vocab.txt
-mkdir -p outputs/validation/phase3 && mv -f outputs/validation/validation/* outputs/validation/phase3/
-
-xdg-open outputs/validation/phase2/overlays_3d.html
-xdg-open outputs/validation/phase3/overlays_3d.html
+# ── open 3D viewer ──
+python 3d-viewer/serve.py --data-dir outputs/latest/validation/3d-viewer
+# → http://127.0.0.1:8090
 ```
 
 ---
 
 ## License note
 
-Third-party code (Stella, Depth Anything 3, FARM / YOLOE / DINOv3) retains **each upstream project’s license**. Weight downloads have their own terms. Review upstream notices before commercial use.
+Third-party code (Stella, Depth Anything 3, FARM / YOLOE / DINOv3) retains **each upstream project's license**. Weight downloads have their own terms. Review upstream notices before commercial use.

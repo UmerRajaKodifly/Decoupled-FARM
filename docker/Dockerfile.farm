@@ -42,6 +42,10 @@ COPY farm_src /farm_src
 COPY common /workspace/common
 COPY phase2 /workspace/phase2
 COPY phase3 /workspace/phase3
+COPY phase3.5-stella-geometry /workspace/phase3.5-stella-geometry
+COPY phase4-caption-best-view /workspace/phase4-caption-best-view
+COPY viser-viewer /workspace/viser-viewer
+COPY 3d-viewer /workspace/3d-viewer
 COPY vocab /vocab
 COPY docker/farm_entrypoint.sh /workspace/farm_entrypoint.sh
 RUN chmod +x /workspace/farm_entrypoint.sh
@@ -51,6 +55,6 @@ RUN pip3 install --no-cache-dir -e /farm_src/third_party/yoloe \
  && pip3 install --no-cache-dir -e /farm_src/third_party/yoloe/third_party/ml-mobileclip \
  && pip3 install --no-cache-dir -e /farm_src --no-deps
 
-ENV PYTHONPATH=/workspace/common:/workspace/phase2:/workspace/phase3:/farm_src/src:${PYTHONPATH}
+ENV PYTHONPATH=/workspace/common:/workspace/phase2:/workspace/phase3:/workspace/phase3.5-stella-geometry:/workspace/phase4-caption-best-view:/farm_src/src:${PYTHONPATH}
 
 ENTRYPOINT ["/workspace/farm_entrypoint.sh"]
