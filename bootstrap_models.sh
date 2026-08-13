@@ -160,27 +160,37 @@ fi
 
 # --- SAM3 checkpoint (gated; needs HF_TOKEN with access to facebook/sam3) ---
 SAM3_DEST="${MODELS_DIR}/sam3/sam3.pt"
+mkdir -p "${MODELS_DIR}/sam3"
 if [[ -f "${SAM3_DEST}" ]]; then
   echo "  [skip] sam3.pt already present"
 elif [[ -n "${HF_TOKEN:-}" ]]; then
   echo "  [get ] sam3.pt (huggingface_hub facebook/sam3)…"
   DEST="${MODELS_DIR}/sam3" python3 - <<'PY' || echo "  [warn] SAM3 download failed — accept the license at https://huggingface.co/facebook/sam3"
 from pathlib import Path
-import os, sys, subprocess
+import os, sys, subprocess, shutil
 dest = Path(os.environ["DEST"])
 dest.mkdir(parents=True, exist_ok=True)
+final = dest / "sam3.pt"
 try:
     from huggingface_hub import hf_hub_download
 except ImportError:
     subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", "huggingface_hub"])
     from huggingface_hub import hf_hub_download
-path = hf_hub_download(
+path = Path(hf_hub_download(
     repo_id="facebook/sam3",
     filename="sam3.pt",
     local_dir=str(dest),
     token=os.environ.get("HF_TOKEN") or None,
-)
-print("  [ok  ]", path)
+))
+# huggingface_hub may place the file under a nested cache dir; normalize to models/sam3/sam3.pt
+if path.resolve() != final.resolve():
+    if final.exists() or final.is_symlink():
+        final.unlink()
+    try:
+        path.replace(final)
+    except OSError:
+        shutil.copy2(path, final)
+print("  [ok  ]", final, f"({final.stat().st_size} bytes)")
 PY
 else
   echo "  [skip] sam3.pt (set HF_TOKEN to download gated facebook/sam3)"

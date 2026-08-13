@@ -149,7 +149,15 @@ cd /home/kodifly/Desktop/farm-git/repo
 bash bootstrap_models.sh
 ```
 
-Installs under `models/`: ORB vocab, YOLOE, MobileCLIP, DINOv3, DA3 (optional offline cache).
+Installs under `models/`: ORB vocab, YOLOE, MobileCLIP, DINOv3, DA3 (optional offline cache),
+and **SAM3** (`models/sam3/sam3.pt`) when `HF_TOKEN` is set (gated; accept the license at
+[facebook/sam3](https://huggingface.co/facebook/sam3) first).
+
+```bash
+bash bootstrap_models.sh
+# or, for SAM3 as well:
+HF_TOKEN=hf_... bash bootstrap_models.sh
+```
 
 Skip DA3 pre-download (fetches from Hugging Face on first Phase 1.5 run):
 
@@ -169,16 +177,20 @@ cp /path/to/your_scan.mp4 inputs/scan.mp4
 docker compose build
 ```
 
+The **farm** image includes the SAM3 Python package (`/opt/sam3`). The 3.3 GB
+checkpoint is **not** stored in the image (gated + large); it is mounted from
+`models/sam3/sam3.pt` at runtime.
+
 Or let `run_pipeline.sh` build automatically when images are missing. Force rebuild:
 
 ```bash
 FORCE_BUILD=1 bash run_pipeline.sh
 ```
 
-Rebuild a single stage after Dockerfile changes:
+Rebuild a single stage after Dockerfile / Phase 2 changes:
 
 ```bash
-docker compose build farm    # after phase / viewer changes
+docker compose build farm    # after phase / viewer / SAM3 wiring changes
 docker compose build da3
 docker compose build stella
 ```
@@ -234,7 +246,43 @@ If `VIDEO_FILE` is omitted, the script auto-picks the first `.mp4` / `.mov` in `
 - `outputs/runs/<RUN_ID>/phase4/crops/`
 - `outputs/runs/<RUN_ID>/validation/3d-viewer/metadata.json`
 
-### 5.2 Smoke test (faster)
+### 5.2 SAM3 detector (drop-in for YOLOE)
+
+SAM3 replaces only Phase 2 detection. Stella / DA3 / Phase 3–4 stay the same.
+
+**How it is packaged**
+
+| Piece | Where |
+|---|---|
+| SAM3 Python package | Baked into `farm-e2e-farm` image at `/opt/sam3` during `docker compose build farm` |
+| Phase 2 wiring (`sam3_segmenter.py`, `--detector sam3`) | Copied into the farm image from the repo |
+| Checkpoint `sam3.pt` (~3.3 GB, gated) | Host `models/sam3/sam3.pt` → mounted as `/models/sam3/sam3.pt` |
+
+After `git pull`, rebuild the farm image so Phase 2 code matches the repo:
+
+```bash
+docker compose build farm
+```
+
+**Full run with SAM3**
+
+```bash
+# once: accept https://huggingface.co/facebook/sam3 then:
+HF_TOKEN=hf_... bash bootstrap_models.sh
+docker compose build
+DETECTOR=sam3 VIDEO_FILE=scan.mp4 bash run_pipeline.sh
+```
+
+**Reuse an existing Stella+DA3 baseline (farm-only)**
+
+```bash
+bash scripts/snapshot_baseline.sh   # once, pins outputs/baselines/manifest.json
+HF_TOKEN=hf_... bash scripts/run_sam3.sh
+```
+
+`run_sam3.sh` rebuilds the farm image, checks that the SAM3 package + checkpoint are visible inside the container, then runs Phase 2–4 with `DETECTOR=sam3`.
+
+### 5.3 Smoke test (faster)
 
 `run_pipeline.sh` always processes **all** Stella keyframes unless you opt in to a cap via `SMOKE_MAX_KFS` (inherited `MAX_KFS` from the shell is ignored).
 
@@ -242,7 +290,7 @@ If `VIDEO_FILE` is omitted, the script auto-picks the first `.mp4` / `.mov` in `
 VIDEO_FILE=scan.mp4 FRAME_STEP=4 SMOKE_MAX_KFS=20 WINDOW_SIZE=4 bash run_pipeline.sh
 ```
 
-### 5.3 Skip stages already completed
+### 5.4 Skip stages already completed
 
 ```bash
 # Re-run only farm stages (Phase 2–4a) on existing Stella + DA3 outputs

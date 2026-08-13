@@ -55,8 +55,11 @@ RUN pip3 install --no-cache-dir -e /farm_src/third_party/yoloe \
  && pip3 install --no-cache-dir -e /farm_src/third_party/yoloe/third_party/ml-mobileclip \
  && pip3 install --no-cache-dir -e /farm_src --no-deps
 
-# SAM3 (text-prompt detector). Checkpoint is mounted at runtime from /models/sam3/sam3.pt
+# SAM3 (text-prompt detector alternate to YOLOE).
+# Code + Python package live in the image; the gated checkpoint is NOT baked —
+# mount host models/sam3/sam3.pt (via bootstrap_models.sh + HF_TOKEN).
 ARG SAM3_COMMIT=5dd401d1c5c1d5c3eedff06d41b77af824517619
+ENV SAM3_CHECKPOINT=/models/sam3/sam3.pt
 RUN git clone https://github.com/facebookresearch/sam3.git /opt/sam3 \
  && cd /opt/sam3 && git checkout "${SAM3_COMMIT}" \
  && pip3 install --no-cache-dir --no-deps -e . \

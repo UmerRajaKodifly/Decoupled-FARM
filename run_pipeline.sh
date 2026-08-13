@@ -195,6 +195,10 @@ check_models() {
   [[ -f "${ROOT}/models/orb_vocab.fbow" ]]              || { echo "missing orb_vocab.fbow"; missing=1; }
   [[ -d "${ROOT}/models/dinov3-vits16" ]]                || { echo "missing dinov3-vits16/"; missing=1; }
   if [[ "${DETECTOR:-yoloe}" == "sam3" ]]; then
+    if [[ ! -f "${ROOT}/models/sam3/sam3.pt" && -n "${HF_TOKEN:-}" ]]; then
+      echo "[$(ts)] models/sam3/sam3.pt missing — fetching via bootstrap_models.sh (HF_TOKEN set)"
+      bash "${ROOT}/bootstrap_models.sh" --skip-da3 || true
+    fi
     [[ -f "${ROOT}/models/sam3/sam3.pt" ]] || { echo "missing models/sam3/sam3.pt (gated facebook/sam3; set HF_TOKEN and re-run bootstrap_models.sh)"; missing=1; }
   else
     [[ -f "${ROOT}/models/yoloe/yoloe-v8l-seg.pt" ]]      || { echo "missing yoloe-v8l-seg.pt"; missing=1; }
@@ -240,6 +244,10 @@ banner "PIPELINE START"
 if [[ "${FORCE_BUILD:-0}" == "1" ]] || ! docker image inspect farm-e2e-stella:latest >/dev/null 2>&1; then
   echo "[$(ts)] Building Docker images…" | tee -a "${MERGED}"
   docker compose build
+elif [[ "${DETECTOR:-yoloe}" == "sam3" ]]; then
+  # Ensure farm image has SAM3 package + current phase2 (cheap no-op if cache warm)
+  echo "[$(ts)] Ensuring farm image includes SAM3…" | tee -a "${MERGED}"
+  docker compose build farm
 fi
 
 # ------------------------------------------------------------------

@@ -12,6 +12,8 @@ outputs/logs/**
 
 models/**
 !models/.gitkeep
+!models/sam3/
+!models/sam3/.gitkeep
 
 inputs/**
 !inputs/.gitkeep
