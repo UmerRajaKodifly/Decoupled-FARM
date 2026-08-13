@@ -16,6 +16,7 @@ Fetches into models/:
   mobileclip/mobileclip_blt.pt
   dinov3-vits16/   (copied from sibling FARM-Project when available)
   da3metric-large/ (HF snapshot unless --skip-da3)
+  sam3/sam3.pt     (gated facebook/sam3; skipped unless HF_TOKEN is set)
 
 Re-runs skip files already present. Does not run any git hooks/CI.
 EOF
@@ -155,6 +156,34 @@ snapshot_download(
 )
 print("  [ok  ]", dest)
 PY
+fi
+
+# --- SAM3 checkpoint (gated; needs HF_TOKEN with access to facebook/sam3) ---
+SAM3_DEST="${MODELS_DIR}/sam3/sam3.pt"
+if [[ -f "${SAM3_DEST}" ]]; then
+  echo "  [skip] sam3.pt already present"
+elif [[ -n "${HF_TOKEN:-}" ]]; then
+  echo "  [get ] sam3.pt (huggingface_hub facebook/sam3)…"
+  DEST="${MODELS_DIR}/sam3" python3 - <<'PY' || echo "  [warn] SAM3 download failed — accept the license at https://huggingface.co/facebook/sam3"
+from pathlib import Path
+import os, sys, subprocess
+dest = Path(os.environ["DEST"])
+dest.mkdir(parents=True, exist_ok=True)
+try:
+    from huggingface_hub import hf_hub_download
+except ImportError:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", "huggingface_hub"])
+    from huggingface_hub import hf_hub_download
+path = hf_hub_download(
+    repo_id="facebook/sam3",
+    filename="sam3.pt",
+    local_dir=str(dest),
+    token=os.environ.get("HF_TOKEN") or None,
+)
+print("  [ok  ]", path)
+PY
+else
+  echo "  [skip] sam3.pt (set HF_TOKEN to download gated facebook/sam3)"
 fi
 
 echo

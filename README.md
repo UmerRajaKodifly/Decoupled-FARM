@@ -236,8 +236,10 @@ If `VIDEO_FILE` is omitted, the script auto-picks the first `.mp4` / `.mov` in `
 
 ### 5.2 Smoke test (faster)
 
+`run_pipeline.sh` always processes **all** Stella keyframes unless you opt in to a cap via `SMOKE_MAX_KFS` (inherited `MAX_KFS` from the shell is ignored).
+
 ```bash
-VIDEO_FILE=scan.mp4 FRAME_STEP=4 MAX_KFS=20 WINDOW_SIZE=4 bash run_pipeline.sh
+VIDEO_FILE=scan.mp4 FRAME_STEP=4 SMOKE_MAX_KFS=20 WINDOW_SIZE=4 bash run_pipeline.sh
 ```
 
 ### 5.3 Skip stages already completed
@@ -394,11 +396,11 @@ sudo rm -f outputs/runs/<RUN_ID>/phase2/detections_kf*.pt
 | `RESIZE` | `1920x960` | Stella input size |
 | `FRAME_STEP` | `2` | Use every Nth video frame in Stella |
 | `WINDOW_SIZE` | `4` | DA3 temporal window size |
-| `MAX_KFS` | *(all)* | Cap keyframes in Phase 1.5 |
+| `SMOKE_MAX_KFS` | *(unset)* | Opt-in cap for Phase 1.5 keyframes (smoke test only) |
 | `YOLOE_CONF` | `0.35` | Detection confidence threshold |
 | `KF_STRIDE` | `1` | Phase 2: every Nth keyframe |
 | `DEVICE` | `cuda` | Phase 2/3 torch device |
-| `PIPELINE_RUN_ID` | auto timestamp | Run namespace under `outputs/runs/` |
+| `PIPELINE_RUN_ID` | auto timestamp | Run namespace under `outputs/runs/` (always fresh; use `RESUME_RUN_ID` to continue) |
 | `FORCE_BUILD` | `0` | Set `1` to rebuild Docker images |
 | `SKIP_STELLA` | `0` | Set `1` to skip Phase 1 |
 | `SKIP_DA3` | `0` | Set `1` to skip Phase 1.5 |

@@ -71,29 +71,29 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#111;color:#e0e0e0;h
 #canvas-wrap canvas{display:block}
 #css2d-layer{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:hidden}
 
-/* ── Detail panel (bottom) ───────────────────────────────────────────── */
+/* ── Detail panel (right) ────────────────────────────────────────────── */
 #detail{
-  position:absolute;bottom:0;left:0;right:0;
-  background:rgba(18,18,18,.93);border-top:1px solid #2a2a2a;
-  padding:10px 16px;display:none;flex-direction:row;gap:14px;
-  align-items:flex-start;z-index:10;max-height:160px
+  width:300px;min-width:240px;max-width:360px;flex-shrink:0;
+  background:#141414;border-left:1px solid #2a2a2a;
+  padding:14px;display:none;flex-direction:column;gap:12px;
+  overflow-y:auto;position:relative
 }
 #detail.visible{display:flex}
 #detail-crop{
-  width:120px;height:120px;object-fit:contain;border-radius:4px;
-  background:#1a1a1a;flex-shrink:0;border:1px solid #333
+  width:100%;aspect-ratio:1;object-fit:contain;border-radius:6px;
+  background:#0d0d0d;flex-shrink:0;border:1px solid #333;cursor:zoom-in
 }
 #detail-crop-placeholder{
-  width:120px;height:120px;background:#1a1a1a;border-radius:4px;
+  width:100%;aspect-ratio:1;background:#0d0d0d;border-radius:6px;
   display:flex;align-items:center;justify-content:center;
-  font-size:28px;color:#333;flex-shrink:0;border:1px solid #2a2a2a
+  font-size:13px;color:#555;flex-shrink:0;border:1px dashed #333
 }
 #detail-text{flex:1;min-width:0}
-#detail-title{font-size:14px;font-weight:600;color:#ddd;margin-bottom:4px}
-#detail-meta{font-size:11px;color:#888;line-height:1.6}
-#detail-votes{font-size:10px;color:#666;margin-top:4px}
+#detail-title{font-size:15px;font-weight:600;color:#eee;margin-bottom:8px;line-height:1.3;padding-right:18px}
+#detail-meta{font-size:12px;color:#999;line-height:1.7}
+#detail-votes{font-size:11px;color:#777;margin-top:8px;line-height:1.5}
 #detail-close{
-  position:absolute;top:8px;right:10px;cursor:pointer;
+  position:absolute;top:10px;right:12px;cursor:pointer;
   color:#555;font-size:16px;line-height:1
 }
 #detail-close:hover{color:#ccc}
@@ -145,17 +145,17 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#111;color:#e0e0e0;h
     <div id="css2d-layer"></div>
     <div id="isolation-badge">Isolation mode — double-click again to exit</div>
   </div>
-</div>
 
-<!-- Detail panel -->
-<div id="detail">
-  <span id="detail-close">✕</span>
-  <img id="detail-crop" style="display:none"/>
-  <div id="detail-crop-placeholder">🔲</div>
-  <div id="detail-text">
-    <div id="detail-title">—</div>
-    <div id="detail-meta">—</div>
-    <div id="detail-votes"></div>
+  <!-- Detail panel (right) -->
+  <div id="detail">
+    <span id="detail-close">✕</span>
+    <img id="detail-crop" style="display:none" title="Click to enlarge"/>
+    <div id="detail-crop-placeholder">No crop</div>
+    <div id="detail-text">
+      <div id="detail-title">—</div>
+      <div id="detail-meta">—</div>
+      <div id="detail-votes"></div>
+    </div>
   </div>
 </div>
 
@@ -539,10 +539,13 @@ function showDetail(ki) {
   if (obj.crop_rel) {
     img.src = obj.crop_rel;
     img.style.display = 'block';
+    img.onclick = () => window.open(obj.crop_rel, '_blank');
     ph.style.display  = 'none';
   } else {
     img.style.display = 'none';
+    img.onclick = null;
     ph.style.display  = 'flex';
+    ph.textContent = 'No crop';
   }
 
   // Scroll sidebar item into view

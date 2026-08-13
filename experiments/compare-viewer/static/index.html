@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>3D Object Memory Viewer</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#111;color:#e0e0e0;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+#toolbar{
+  display:flex;align-items:center;gap:10px;padding:7px 14px;
+  background:#1a1a1a;border-bottom:1px solid #333;flex-shrink:0;flex-wrap:wrap
+}
+#toolbar h1{font-size:13px;font-weight:600;color:#ccc;white-space:nowrap;margin-right:6px}
+#search{
+  padding:4px 10px;border-radius:5px;border:1px solid #444;background:#252525;
+  color:#ddd;font-size:12px;width:180px
+}
+#search::placeholder{color:#666}
+.toggle-group{display:flex;gap:6px;flex-wrap:wrap}
+.toggle-btn{
+  padding:3px 10px;border-radius:4px;border:1px solid #444;background:#252525;
+  color:#aaa;cursor:pointer;font-size:11px;transition:all .15s
+}
+.toggle-btn.active{background:#2a5a8a;border-color:#4a8ac4;color:#fff}
+#ablation-wrap{display:flex;align-items:center;gap:6px;font-size:11px;color:#888}
+#inp-ablation{padding:3px 6px;background:#222;border:1px solid #444;color:#ddd;border-radius:4px;font-size:11px;max-width:280px}
+#stats{font-size:11px;color:#666;margin-left:auto;white-space:nowrap}
+#loading-bar{position:fixed;top:0;left:0;height:3px;background:#4a8ac4;width:0%;transition:width .3s;z-index:1000}
+
+#main{display:flex;flex:1;overflow:hidden;min-height:0}
+
+#sidebar{
+  width:240px;min-width:180px;max-width:340px;
+  background:#161616;border-right:1px solid #2a2a2a;
+  display:flex;flex-direction:column;overflow:hidden;flex-shrink:0
+}
+#sidebar-header{
+  padding:8px 10px;font-size:11px;font-weight:600;color:#888;
+  border-bottom:1px solid #2a2a2a;background:#1a1a1a;flex-shrink:0
+}
+#obj-list{flex:1;overflow-y:auto;padding:4px 0;min-height:0}
+#obj-list::-webkit-scrollbar{width:5px}
+#obj-list::-webkit-scrollbar-track{background:#111}
+#obj-list::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
+
+.obj-item{
+  display:flex;align-items:center;gap:8px;padding:5px 10px;
+  cursor:pointer;transition:background .1s;border-left:3px solid transparent
+}
+.obj-item:hover{background:#1f1f1f}
+.obj-item.selected{background:#1a2a3a;border-left-color:#4a8ac4}
+.obj-swatch{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.obj-thumb{width:36px;height:36px;object-fit:cover;border-radius:3px;flex-shrink:0;background:#222}
+.obj-thumb-placeholder{
+  width:36px;height:36px;border-radius:3px;background:#222;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;color:#444;flex-shrink:0
+}
+.obj-info{min-width:0}
+.obj-label{font-size:11px;color:#ccc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.obj-meta{font-size:10px;color:#555;white-space:nowrap}
+
+#rerun-panel{border-top:1px solid #2a2a2a;padding:8px 10px;font-size:11px;flex-shrink:0;background:#141414}
+#rerun-panel h2{font-size:10px;color:#777;font-weight:600;margin-bottom:6px}
+#rerun-panel label{display:flex;justify-content:space-between;align-items:center;margin:5px 0;color:#aaa}
+#rerun-panel label span{min-width:90px}
+#rerun-panel input[type=range]{flex:1;margin:0 6px}
+#rerun-panel select{width:100%;margin-top:3px;padding:3px;background:#222;border:1px solid #444;color:#ddd;border-radius:4px;font-size:11px}
+#rerun-panel .val{min-width:32px;text-align:right;color:#ccc;font-variant-numeric:tabular-nums}
+#run-btn{width:100%;margin-top:6px;padding:5px;background:#2a5a8a;border:1px solid #4a8ac4;color:#fff;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600}
+#run-btn:disabled{opacity:.45;cursor:not-allowed}
+#run-status{margin-top:5px;font-size:10px;color:#888;line-height:1.35}
+
+#canvas-wrap{flex:1;position:relative;overflow:hidden;min-width:0}
+#canvas-wrap canvas{display:block}
+.label3d{
+  pointer-events:none;white-space:nowrap;
+  font-size:11px;font-weight:500;color:#fff;
+  text-shadow:0 0 4px #000,0 0 8px #000;
+  background:rgba(0,0,0,.35);padding:1px 5px;border-radius:3px
+}
+
+#detail{
+  position:absolute;bottom:0;left:0;right:0;
+  background:rgba(18,18,18,.93);border-top:1px solid #2a2a2a;
+  padding:10px 16px;display:none;flex-direction:row;gap:14px;
+  align-items:flex-start;z-index:10;max-height:160px
+}
+#detail.visible{display:flex}
+#detail-crop{
+  width:120px;height:120px;object-fit:contain;border-radius:4px;
+  background:#1a1a1a;flex-shrink:0;border:1px solid #333;cursor:zoom-in
+}
+#detail-crop-placeholder{
+  width:120px;height:120px;background:#1a1a1a;border-radius:4px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:28px;color:#333;flex-shrink:0;border:1px solid #2a2a2a
+}
+#detail-text{flex:1;min-width:0}
+#detail-title{font-size:14px;font-weight:600;color:#ddd;margin-bottom:4px}
+#detail-meta{font-size:11px;color:#888;line-height:1.6}
+#detail-votes{font-size:10px;color:#666;margin-top:4px}
+#detail-close{position:absolute;top:8px;right:10px;cursor:pointer;color:#555;font-size:16px;line-height:1}
+#detail-close:hover{color:#ccc}
+
+#isolation-badge{
+  position:absolute;top:10px;left:50%;transform:translateX(-50%);
+  background:rgba(74,138,196,.85);color:#fff;font-size:12px;padding:4px 14px;
+  border-radius:12px;display:none;pointer-events:none;z-index:20
+}
+</style>
+</head>
+<body>
+<div id="loading-bar"></div>
+
+<div id="toolbar">
+  <h1>3D Memory Viewer</h1>
+  <label id="ablation-wrap">Run
+    <select id="inp-ablation"></select>
+  </label>
+  <input id="search" type="text" placeholder="Filter objects…"/>
+  <div class="toggle-group">
+    <button class="toggle-btn active" data-layer="bg">Background Cloud</button>
+    <button class="toggle-btn active" data-layer="obj-pts">Object Pts</button>
+    <button class="toggle-btn active" data-layer="boxes">Boxes</button>
+    <button class="toggle-btn active" data-layer="labels">Labels</button>
+    <button class="toggle-btn active" data-layer="billboards">Crops</button>
+  </div>
+  <span id="stats">Loading…</span>
+</div>
+
+<div id="main">
+  <div id="sidebar">
+    <div id="sidebar-header">Objects (<span id="obj-count">0</span>)</div>
+    <div id="obj-list"></div>
+    <div id="rerun-panel">
+      <h2>RE-RUN (Phase 2–4)</h2>
+      <label>Vocab
+        <select id="inp-vocab"></select>
+      </label>
+      <label>YOLOE conf <span class="val" id="val-conf">0.35</span>
+        <input type="range" id="inp-conf" min="0.15" max="0.70" step="0.01" value="0.35"/>
+      </label>
+      <label>Vote min score <span class="val" id="val-vote">0.25</span>
+        <input type="range" id="inp-vote" min="0.05" max="0.70" step="0.01" value="0.25"/>
+      </label>
+      <label>Vote margin <span class="val" id="val-margin">1.15</span>
+        <input type="range" id="inp-margin" min="1.00" max="2.00" step="0.01" value="1.15"/>
+      </label>
+      <button id="run-btn" type="button">Re-run experiment</button>
+      <div id="run-status">Pick a run above, or re-run with new params (~5 min)</div>
+    </div>
+  </div>
+
+  <div id="canvas-wrap">
+    <div id="isolation-badge">Isolation mode — double-click again to exit</div>
+    <div id="detail">
+      <span id="detail-close">✕</span>
+      <img id="detail-crop" style="display:none"/>
+      <div id="detail-crop-placeholder">🔲</div>
+      <div id="detail-text">
+        <div id="detail-title">—</div>
+        <div id="detail-meta">—</div>
+        <div id="detail-votes"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+<script type="module">
+import { ViewerPane } from './viewer-pane.js';
+
+let pane = null;
+let selectedExperimentId = null;
+let ablationListReady = false;
+let pollTimer = null;
+const LAYER_KEY = 'farm-viewer-layers';
+const layers = { bg: true, 'obj-pts': true, boxes: true, labels: true, billboards: true };
+
+function loadSavedLayers() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(LAYER_KEY) || '');
+    if (saved && typeof saved === 'object') {
+      for (const k of Object.keys(layers)) {
+        if (typeof saved[k] === 'boolean') layers[k] = saved[k];
+      }
+    }
+  } catch { /* ignore */ }
+}
+
+function saveLayers() {
+  localStorage.setItem(LAYER_KEY, JSON.stringify(layers));
+}
+
+function syncLayerButtons() {
+  document.querySelectorAll('.toggle-btn').forEach(btn => {
+    const on = !!layers[btn.dataset.layer];
+    btn.classList.toggle('active', on);
+  });
+}
+
+function applyLayers() {
+  pane?.setLayers(layers);
+  syncLayerButtons();
+}
+
+function setProgress(p) {
+  document.getElementById('loading-bar').style.width = p + '%';
+}
+
+function cropUrl(rel) {
+  return `data/${rel}`;
+}
+
+function buildSidebar(filter) {
+  const listEl = document.getElementById('obj-list');
+  const objects = pane?.objects || [];
+  const q = (filter || '').toLowerCase();
+  const filtered = q
+    ? objects.map((o, i) => ({ o, i })).filter(({ o }) => o.label.toLowerCase().includes(q))
+    : objects.map((o, i) => ({ o, i }));
+
+  document.getElementById('obj-count').textContent = filtered.length;
+  listEl.innerHTML = '';
+
+  for (const { o: obj, i: ki } of filtered) {
+    const div = document.createElement('div');
+    div.className = 'obj-item' + (ki === pane.selectedIdx ? ' selected' : '');
+    div.dataset.ki = ki;
+
+    const sw = document.createElement('div');
+    sw.className = 'obj-swatch';
+    sw.style.background = obj.color;
+
+    let thumbEl;
+    if (obj.crop_rel) {
+      thumbEl = document.createElement('img');
+      thumbEl.className = 'obj-thumb';
+      thumbEl.src = cropUrl(obj.crop_rel);
+      thumbEl.alt = obj.label;
+    } else {
+      thumbEl = document.createElement('div');
+      thumbEl.className = 'obj-thumb-placeholder';
+      thumbEl.textContent = '🔲';
+    }
+
+    const info = document.createElement('div');
+    info.className = 'obj-info';
+    const lbl = document.createElement('div');
+    lbl.className = 'obj-label';
+    lbl.textContent = obj.label;
+    const meta = document.createElement('div');
+    meta.className = 'obj-meta';
+    meta.textContent = `id:${obj.id} · ${obj.n_pts}pts`;
+    info.append(lbl, meta);
+    div.append(sw, thumbEl, info);
+    div.addEventListener('click', () => pane.selectObject(ki, true));
+    listEl.appendChild(div);
+  }
+}
+
+function showDetail(ki) {
+  const obj = pane.objects[ki];
+  if (!obj) return;
+  const panel = document.getElementById('detail');
+  panel.classList.add('visible');
+  document.getElementById('detail-title').textContent = `${obj.label}  (id: ${obj.id})`;
+  const m = obj.mean;
+  document.getElementById('detail-meta').innerHTML =
+    `<b>XYZ:</b> ${m[0].toFixed(2)}, ${m[1].toFixed(2)}, ${m[2].toFixed(2)} m &nbsp;·&nbsp; ` +
+    `<b>Stella pts:</b> ${obj.n_pts} &nbsp;·&nbsp; ` +
+    `<b>Class id:</b> ${obj.class_id}`;
+
+  const votesEl = document.getElementById('detail-votes');
+  if (obj.vote_summary && Object.keys(obj.vote_summary).length) {
+    votesEl.textContent = 'Votes: ' + Object.entries(obj.vote_summary).map(([l, w]) => `${l}:${w}`).join('  ');
+  } else {
+    votesEl.textContent = '';
+  }
+
+  const img = document.getElementById('detail-crop');
+  const ph = document.getElementById('detail-crop-placeholder');
+  if (obj.crop_rel) {
+    img.src = cropUrl(obj.crop_rel);
+    img.style.display = 'block';
+    ph.style.display = 'none';
+    img.onclick = () => window.open(img.src, '_blank');
+  } else {
+    img.style.display = 'none';
+    ph.style.display = 'flex';
+  }
+
+  document.querySelectorAll('.obj-item').forEach(el => {
+    el.classList.toggle('selected', parseInt(el.dataset.ki, 10) === ki);
+  });
+  const item = document.querySelector(`.obj-item[data-ki="${ki}"]`);
+  if (item) item.scrollIntoView({ block: 'nearest' });
+}
+
+function hideDetail() {
+  document.getElementById('detail').classList.remove('visible');
+  document.querySelectorAll('.obj-item').forEach(el => el.classList.remove('selected'));
+}
+
+function onObjectSelect(idx) {
+  if (idx < 0) hideDetail();
+  else showDetail(idx);
+}
+
+function onResize() {
+  const wrap = document.getElementById('canvas-wrap');
+  pane?.resize(wrap.clientWidth, wrap.clientHeight);
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  pane?.render();
+}
+
+async function loadAblationList(preserveId) {
+  const sel = document.getElementById('inp-ablation');
+  const data = await (await fetch('api/ablations')).json();
+  const prev = preserveId || sel.value;
+  sel.innerHTML = '';
+  for (const e of (data.experiments || [])) {
+    const opt = document.createElement('option');
+    opt.value = e.id;
+    opt.textContent = `${e.label}${e.note ? ' · ' + e.note : ''}`;
+    sel.appendChild(opt);
+  }
+  if (prev && [...sel.options].some(o => o.value === prev)) {
+    sel.value = prev;
+  } else if (sel.options.length) {
+    const baseline = [...sel.options].find(o => o.value === 'c035_v025_m115');
+    sel.value = baseline ? baseline.value : sel.options[0].value;
+  }
+  if (!ablationListReady && sel.value) {
+    selectedExperimentId = sel.value;
+  }
+  ablationListReady = true;
+  return sel.value;
+}
+
+async function switchExperiment(expId) {
+  selectedExperimentId = expId;
+  setProgress(15);
+  document.getElementById('loading-bar').style.display = 'block';
+  hideDetail();
+  await fetch(`api/manifest?experiment_id=${encodeURIComponent(expId)}`);
+  const meta = await pane.reload();
+  applyLayers();
+  document.getElementById('isolation-badge').style.display = 'none';
+  document.getElementById('stats').textContent =
+    `${meta.n_objects_active} objs · ${(meta.n_bg_pts || 0).toLocaleString()} bg pts`;
+  buildSidebar(document.getElementById('search').value);
+  setProgress(100);
+  setTimeout(() => { document.getElementById('loading-bar').style.display = 'none'; }, 400);
+}
+
+function bindSlider(id, valId, decimals = 2) {
+  const inp = document.getElementById(id);
+  const val = document.getElementById(valId);
+  const upd = () => { val.textContent = Number(inp.value).toFixed(decimals); };
+  inp.addEventListener('input', upd);
+  upd();
+  return inp;
+}
+
+function setRunUi(running, msg) {
+  document.getElementById('run-btn').disabled = running;
+  document.getElementById('inp-conf').disabled = running;
+  document.getElementById('inp-vote').disabled = running;
+  document.getElementById('inp-margin').disabled = running;
+  document.getElementById('inp-vocab').disabled = running;
+  if (msg) document.getElementById('run-status').textContent = msg;
+}
+
+function startPoll() {
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(async () => {
+    const st = await (await fetch('api/status')).json();
+    if (st.status === 'running') {
+      setRunUi(true, st.message || 'Running…');
+      return;
+    }
+    clearInterval(pollTimer);
+    pollTimer = null;
+    if (st.status === 'complete') {
+      await loadAblationList(selectedExperimentId);
+      setRunUi(false, 'Done. Pick the new run from the dropdown.');
+    } else {
+      setRunUi(false, st.message || 'Run failed.');
+    }
+  }, 4000);
+}
+
+async function initExperimentControls() {
+  const conf = bindSlider('inp-conf', 'val-conf');
+  const vote = bindSlider('inp-vote', 'val-vote');
+  const margin = bindSlider('inp-margin', 'val-margin');
+  const vocabSel = document.getElementById('inp-vocab');
+  const runBtn = document.getElementById('run-btn');
+  const statusEl = document.getElementById('run-status');
+
+  const cfg = await (await fetch('api/config')).json();
+  for (const v of cfg.vocabs) {
+    const opt = document.createElement('option');
+    opt.value = v.file;
+    opt.textContent = `${v.file} (${v.n_classes} classes)`;
+    vocabSel.appendChild(opt);
+  }
+  const cur = cfg.current_params || cfg.defaults;
+  conf.value = cur.yoloe_conf ?? cfg.defaults.yoloe_conf;
+  vote.value = cur.label_min_score ?? cfg.defaults.label_min_score;
+  margin.value = cur.label_margin ?? cfg.defaults.label_margin;
+  vocabSel.value = (cur.vocab || cfg.defaults.vocab).replace(/^.*\//, '');
+  conf.dispatchEvent(new Event('input'));
+  vote.dispatchEvent(new Event('input'));
+  margin.dispatchEvent(new Event('input'));
+
+  if (cfg.job?.status === 'running') {
+    setRunUi(true, cfg.job.message || 'Running…');
+    startPoll();
+  }
+
+  document.getElementById('inp-ablation').onchange = async e => {
+    await switchExperiment(e.target.value);
+  };
+
+  runBtn.onclick = async () => {
+    runBtn.disabled = true;
+    statusEl.textContent = 'Starting pipeline…';
+    const resp = await fetch('api/rerun', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        yoloe_conf: parseFloat(conf.value),
+        label_min_score: parseFloat(vote.value),
+        label_margin: parseFloat(margin.value),
+        vocab: vocabSel.value,
+      }),
+    });
+    const data = await resp.json();
+    if (!data.ok) {
+      statusEl.textContent = data.error || 'Failed to start';
+      runBtn.disabled = false;
+      return;
+    }
+    setRunUi(true, 'Pipeline running (Phase 2–4)…');
+    startPoll();
+  };
+}
+
+async function boot() {
+  setProgress(5);
+  loadSavedLayers();
+  syncLayerButtons();
+  const wrap = document.getElementById('canvas-wrap');
+  pane = new ViewerPane('main', wrap, 'data', {
+    onSelect: onObjectSelect,
+    onIsolate: ki => {
+      document.getElementById('isolation-badge').style.display = ki >= 0 ? 'block' : 'none';
+    },
+  });
+  window.addEventListener('resize', onResize);
+  onResize();
+  animate();
+
+  const expId = await loadAblationList();
+  if (expId) {
+    await fetch(`api/manifest?experiment_id=${encodeURIComponent(expId)}`);
+    selectedExperimentId = expId;
+  }
+  setProgress(20);
+
+  const meta = await pane.load();
+  applyLayers();
+  document.getElementById('stats').textContent =
+    `${meta.n_objects_active} objs · ${(meta.n_bg_pts || 0).toLocaleString()} bg pts`;
+  buildSidebar('');
+  setProgress(100);
+  setTimeout(() => { document.getElementById('loading-bar').style.display = 'none'; }, 500);
+
+  document.querySelectorAll('.toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const layer = btn.dataset.layer;
+      layers[layer] = !layers[layer];
+      saveLayers();
+      applyLayers();
+    });
+  });
+  document.getElementById('search').addEventListener('input', e => buildSidebar(e.target.value));
+  document.getElementById('detail-close').onclick = () => {
+    hideDetail();
+    pane.selectObject(-1, false, true);
+  };
+
+  await initExperimentControls();
+  setInterval(() => loadAblationList(selectedExperimentId), 30000);
+}
+
+boot().catch(err => {
+  console.error(err);
+  document.getElementById('stats').textContent = 'Load error — see console';
+});
+</script>
+</body>
+</html>

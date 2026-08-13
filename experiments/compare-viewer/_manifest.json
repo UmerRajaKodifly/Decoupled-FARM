@@ -1,0 +1,3202 @@
+{
+  "baseline": {
+    "run_id": "run_20260812_130739",
+    "label": "Baseline (48-class)",
+    "viewer_dir": "/home/kodifly/Desktop/farm-rnd/farm-object-map/outputs/runs/run_20260812_130739/validation/3d-viewer",
+    "n_objects": 309,
+    "class_histogram": {
+      "mobile crane": 32,
+      "trailer truck": 27,
+      "site wall": 24,
+      "truck": 9,
+      "external wall": 15,
+      "metal rebar cage": 7,
+      "storage container": 8,
+      "construction debris": 38,
+      "concrete wall": 10,
+      "brick pile": 2,
+      "garbage pile": 3,
+      "concrete perimeter wall": 26,
+      "rubble": 16,
+      "tanker truck": 1,
+      "dumpster": 34,
+      "perimeter wall": 3,
+      "I-beam": 3,
+      "structural steel": 9,
+      "steel column": 6,
+      "retaining wall": 3,
+      "metal pipe": 1,
+      "water truck": 2,
+      "site container": 14,
+      "site office container": 4,
+      "brick stack": 1,
+      "shipping container": 6,
+      "dump truck": 3,
+      "rebar cage": 1,
+      "metal rebar": 1
+    },
+    "phase35_summary": {
+      "Input Stella state": "/phase3.5/scene_state_stella.pt",
+      "Objects total/active": "324/309",
+      "Stella updated": "267 (86.4%)",
+      "New p95 max-side": "7.50 m",
+      "New median max-side": "6.30 m",
+      "INFO  p95 improvement vs Gaussian": "65% (21.3m \u2192 7.5m)",
+      "OVERALL": "WARN"
+    },
+    "phase4_summary": {
+      "OVERALL": "WARN"
+    }
+  },
+  "experiment": {
+    "run_id": "run_20260812_130739",
+    "label": "conf=0.35 vote=0.25 margin=1.15",
+    "viewer_dir": "/home/kodifly/Desktop/farm-rnd/farm-object-map/outputs/runs/run_20260812_130739/validation/3d-viewer",
+    "n_objects": 309,
+    "class_histogram": {
+      "mobile crane": 32,
+      "trailer truck": 27,
+      "site wall": 24,
+      "truck": 9,
+      "external wall": 15,
+      "metal rebar cage": 7,
+      "storage container": 8,
+      "construction debris": 38,
+      "concrete wall": 10,
+      "brick pile": 2,
+      "garbage pile": 3,
+      "concrete perimeter wall": 26,
+      "rubble": 16,
+      "tanker truck": 1,
+      "dumpster": 34,
+      "perimeter wall": 3,
+      "I-beam": 3,
+      "structural steel": 9,
+      "steel column": 6,
+      "retaining wall": 3,
+      "metal pipe": 1,
+      "water truck": 2,
+      "site container": 14,
+      "site office container": 4,
+      "brick stack": 1,
+      "shipping container": 6,
+      "dump truck": 3,
+      "rebar cage": 1,
+      "metal rebar": 1
+    },
+    "phase35_summary": {
+      "Input Stella state": "/phase3.5/scene_state_stella.pt",
+      "Objects total/active": "324/309",
+      "Stella updated": "267 (86.4%)",
+      "New p95 max-side": "7.50 m",
+      "New median max-side": "6.30 m",
+      "INFO  p95 improvement vs Gaussian": "65% (21.3m \u2192 7.5m)",
+      "OVERALL": "WARN"
+    },
+    "phase4_summary": {
+      "OVERALL": "WARN"
+    }
+  },
+  "diff": {
+    "matched_pairs": 309,
+    "label_changes": 0,
+    "only_baseline": 0,
+    "only_experiment": 0,
+    "pairs": [
+      {
+        "dist_m": 0.0,
+        "a_index": 0,
+        "b_index": 0,
+        "a_id": 0,
+        "b_id": 0,
+        "a_label": "mobile crane",
+        "b_label": "mobile crane",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 1,
+        "b_index": 1,
+        "a_id": 1,
+        "b_id": 1,
+        "a_label": "trailer truck",
+        "b_label": "trailer truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 2,
+        "b_index": 2,
+        "a_id": 2,
+        "b_id": 2,
+        "a_label": "site wall",
+        "b_label": "site wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 3,
+        "b_index": 3,
+        "a_id": 3,
+        "b_id": 3,
+        "a_label": "truck",
+        "b_label": "truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 4,
+        "b_index": 4,
+        "a_id": 4,
+        "b_id": 4,
+        "a_label": "external wall",
+        "b_label": "external wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 5,
+        "b_index": 5,
+        "a_id": 5,
+        "b_id": 5,
+        "a_label": "external wall",
+        "b_label": "external wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 6,
+        "b_index": 6,
+        "a_id": 6,
+        "b_id": 6,
+        "a_label": "external wall",
+        "b_label": "external wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 7,
+        "b_index": 7,
+        "a_id": 7,
+        "b_id": 7,
+        "a_label": "site wall",
+        "b_label": "site wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 8,
+        "b_index": 8,
+        "a_id": 9,
+        "b_id": 9,
+        "a_label": "mobile crane",
+        "b_label": "mobile crane",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 9,
+        "b_index": 9,
+        "a_id": 13,
+        "b_id": 13,
+        "a_label": "metal rebar cage",
+        "b_label": "metal rebar cage",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 10,
+        "b_index": 10,
+        "a_id": 14,
+        "b_id": 14,
+        "a_label": "site wall",
+        "b_label": "site wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 11,
+        "b_index": 11,
+        "a_id": 17,
+        "b_id": 17,
+        "a_label": "external wall",
+        "b_label": "external wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 12,
+        "b_index": 12,
+        "a_id": 18,
+        "b_id": 18,
+        "a_label": "truck",
+        "b_label": "truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 13,
+        "b_index": 13,
+        "a_id": 19,
+        "b_id": 19,
+        "a_label": "mobile crane",
+        "b_label": "mobile crane",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 14,
+        "b_index": 14,
+        "a_id": 20,
+        "b_id": 20,
+        "a_label": "metal rebar cage",
+        "b_label": "metal rebar cage",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 15,
+        "b_index": 15,
+        "a_id": 21,
+        "b_id": 21,
+        "a_label": "truck",
+        "b_label": "truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 16,
+        "b_index": 16,
+        "a_id": 22,
+        "b_id": 22,
+        "a_label": "storage container",
+        "b_label": "storage container",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 17,
+        "b_index": 17,
+        "a_id": 23,
+        "b_id": 23,
+        "a_label": "trailer truck",
+        "b_label": "trailer truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 18,
+        "b_index": 18,
+        "a_id": 24,
+        "b_id": 24,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 19,
+        "b_index": 19,
+        "a_id": 25,
+        "b_id": 25,
+        "a_label": "concrete wall",
+        "b_label": "concrete wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 20,
+        "b_index": 20,
+        "a_id": 26,
+        "b_id": 26,
+        "a_label": "mobile crane",
+        "b_label": "mobile crane",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 21,
+        "b_index": 21,
+        "a_id": 27,
+        "b_id": 27,
+        "a_label": "trailer truck",
+        "b_label": "trailer truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 22,
+        "b_index": 22,
+        "a_id": 28,
+        "b_id": 28,
+        "a_label": "mobile crane",
+        "b_label": "mobile crane",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 23,
+        "b_index": 23,
+        "a_id": 29,
+        "b_id": 29,
+        "a_label": "trailer truck",
+        "b_label": "trailer truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 24,
+        "b_index": 24,
+        "a_id": 30,
+        "b_id": 30,
+        "a_label": "brick pile",
+        "b_label": "brick pile",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 25,
+        "b_index": 25,
+        "a_id": 31,
+        "b_id": 31,
+        "a_label": "concrete wall",
+        "b_label": "concrete wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 26,
+        "b_index": 26,
+        "a_id": 32,
+        "b_id": 32,
+        "a_label": "truck",
+        "b_label": "truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 27,
+        "b_index": 27,
+        "a_id": 33,
+        "b_id": 33,
+        "a_label": "mobile crane",
+        "b_label": "mobile crane",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 28,
+        "b_index": 28,
+        "a_id": 34,
+        "b_id": 34,
+        "a_label": "external wall",
+        "b_label": "external wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 29,
+        "b_index": 29,
+        "a_id": 35,
+        "b_id": 35,
+        "a_label": "trailer truck",
+        "b_label": "trailer truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 30,
+        "b_index": 30,
+        "a_id": 36,
+        "b_id": 36,
+        "a_label": "trailer truck",
+        "b_label": "trailer truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 31,
+        "b_index": 31,
+        "a_id": 37,
+        "b_id": 37,
+        "a_label": "site wall",
+        "b_label": "site wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 32,
+        "b_index": 32,
+        "a_id": 39,
+        "b_id": 39,
+        "a_label": "site wall",
+        "b_label": "site wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 33,
+        "b_index": 33,
+        "a_id": 40,
+        "b_id": 40,
+        "a_label": "metal rebar cage",
+        "b_label": "metal rebar cage",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 34,
+        "b_index": 34,
+        "a_id": 41,
+        "b_id": 41,
+        "a_label": "storage container",
+        "b_label": "storage container",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 35,
+        "b_index": 35,
+        "a_id": 42,
+        "b_id": 42,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 36,
+        "b_index": 36,
+        "a_id": 44,
+        "b_id": 44,
+        "a_label": "brick pile",
+        "b_label": "brick pile",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 37,
+        "b_index": 37,
+        "a_id": 45,
+        "b_id": 45,
+        "a_label": "storage container",
+        "b_label": "storage container",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 38,
+        "b_index": 38,
+        "a_id": 46,
+        "b_id": 46,
+        "a_label": "mobile crane",
+        "b_label": "mobile crane",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 39,
+        "b_index": 39,
+        "a_id": 47,
+        "b_id": 47,
+        "a_label": "external wall",
+        "b_label": "external wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 40,
+        "b_index": 40,
+        "a_id": 48,
+        "b_id": 48,
+        "a_label": "site wall",
+        "b_label": "site wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 41,
+        "b_index": 41,
+        "a_id": 49,
+        "b_id": 49,
+        "a_label": "concrete wall",
+        "b_label": "concrete wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 42,
+        "b_index": 42,
+        "a_id": 50,
+        "b_id": 50,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 43,
+        "b_index": 43,
+        "a_id": 51,
+        "b_id": 51,
+        "a_label": "concrete wall",
+        "b_label": "concrete wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 44,
+        "b_index": 44,
+        "a_id": 52,
+        "b_id": 52,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 45,
+        "b_index": 45,
+        "a_id": 53,
+        "b_id": 53,
+        "a_label": "storage container",
+        "b_label": "storage container",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 46,
+        "b_index": 46,
+        "a_id": 54,
+        "b_id": 54,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 47,
+        "b_index": 47,
+        "a_id": 55,
+        "b_id": 55,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 48,
+        "b_index": 48,
+        "a_id": 56,
+        "b_id": 56,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 49,
+        "b_index": 49,
+        "a_id": 57,
+        "b_id": 57,
+        "a_label": "site wall",
+        "b_label": "site wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 50,
+        "b_index": 50,
+        "a_id": 59,
+        "b_id": 59,
+        "a_label": "garbage pile",
+        "b_label": "garbage pile",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 51,
+        "b_index": 51,
+        "a_id": 61,
+        "b_id": 61,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 52,
+        "b_index": 52,
+        "a_id": 62,
+        "b_id": 62,
+        "a_label": "concrete perimeter wall",
+        "b_label": "concrete perimeter wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 53,
+        "b_index": 53,
+        "a_id": 63,
+        "b_id": 63,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 54,
+        "b_index": 54,
+        "a_id": 64,
+        "b_id": 64,
+        "a_label": "rubble",
+        "b_label": "rubble",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 55,
+        "b_index": 55,
+        "a_id": 65,
+        "b_id": 65,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 56,
+        "b_index": 56,
+        "a_id": 66,
+        "b_id": 66,
+        "a_label": "site wall",
+        "b_label": "site wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 57,
+        "b_index": 57,
+        "a_id": 67,
+        "b_id": 67,
+        "a_label": "site wall",
+        "b_label": "site wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 58,
+        "b_index": 58,
+        "a_id": 68,
+        "b_id": 68,
+        "a_label": "garbage pile",
+        "b_label": "garbage pile",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 59,
+        "b_index": 59,
+        "a_id": 69,
+        "b_id": 69,
+        "a_label": "tanker truck",
+        "b_label": "tanker truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 60,
+        "b_index": 60,
+        "a_id": 70,
+        "b_id": 70,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 61,
+        "b_index": 61,
+        "a_id": 71,
+        "b_id": 71,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 62,
+        "b_index": 62,
+        "a_id": 72,
+        "b_id": 72,
+        "a_label": "storage container",
+        "b_label": "storage container",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 63,
+        "b_index": 63,
+        "a_id": 73,
+        "b_id": 73,
+        "a_label": "dumpster",
+        "b_label": "dumpster",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 64,
+        "b_index": 64,
+        "a_id": 74,
+        "b_id": 74,
+        "a_label": "concrete perimeter wall",
+        "b_label": "concrete perimeter wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 65,
+        "b_index": 65,
+        "a_id": 75,
+        "b_id": 75,
+        "a_label": "mobile crane",
+        "b_label": "mobile crane",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 66,
+        "b_index": 66,
+        "a_id": 76,
+        "b_id": 76,
+        "a_label": "trailer truck",
+        "b_label": "trailer truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 67,
+        "b_index": 67,
+        "a_id": 77,
+        "b_id": 77,
+        "a_label": "dumpster",
+        "b_label": "dumpster",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 68,
+        "b_index": 68,
+        "a_id": 78,
+        "b_id": 78,
+        "a_label": "mobile crane",
+        "b_label": "mobile crane",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 69,
+        "b_index": 69,
+        "a_id": 79,
+        "b_id": 79,
+        "a_label": "perimeter wall",
+        "b_label": "perimeter wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 70,
+        "b_index": 70,
+        "a_id": 80,
+        "b_id": 80,
+        "a_label": "site wall",
+        "b_label": "site wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 71,
+        "b_index": 71,
+        "a_id": 82,
+        "b_id": 82,
+        "a_label": "dumpster",
+        "b_label": "dumpster",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 72,
+        "b_index": 72,
+        "a_id": 83,
+        "b_id": 83,
+        "a_label": "dumpster",
+        "b_label": "dumpster",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 73,
+        "b_index": 73,
+        "a_id": 84,
+        "b_id": 84,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 74,
+        "b_index": 74,
+        "a_id": 85,
+        "b_id": 85,
+        "a_label": "trailer truck",
+        "b_label": "trailer truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 75,
+        "b_index": 75,
+        "a_id": 86,
+        "b_id": 86,
+        "a_label": "mobile crane",
+        "b_label": "mobile crane",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 76,
+        "b_index": 76,
+        "a_id": 87,
+        "b_id": 87,
+        "a_label": "dumpster",
+        "b_label": "dumpster",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 77,
+        "b_index": 77,
+        "a_id": 88,
+        "b_id": 88,
+        "a_label": "dumpster",
+        "b_label": "dumpster",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 78,
+        "b_index": 78,
+        "a_id": 89,
+        "b_id": 89,
+        "a_label": "rubble",
+        "b_label": "rubble",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 79,
+        "b_index": 79,
+        "a_id": 90,
+        "b_id": 90,
+        "a_label": "trailer truck",
+        "b_label": "trailer truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 80,
+        "b_index": 80,
+        "a_id": 91,
+        "b_id": 91,
+        "a_label": "mobile crane",
+        "b_label": "mobile crane",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 81,
+        "b_index": 81,
+        "a_id": 92,
+        "b_id": 92,
+        "a_label": "rubble",
+        "b_label": "rubble",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 82,
+        "b_index": 82,
+        "a_id": 93,
+        "b_id": 93,
+        "a_label": "trailer truck",
+        "b_label": "trailer truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 83,
+        "b_index": 83,
+        "a_id": 94,
+        "b_id": 94,
+        "a_label": "truck",
+        "b_label": "truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 84,
+        "b_index": 84,
+        "a_id": 95,
+        "b_id": 95,
+        "a_label": "I-beam",
+        "b_label": "I-beam",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 85,
+        "b_index": 85,
+        "a_id": 96,
+        "b_id": 96,
+        "a_label": "rubble",
+        "b_label": "rubble",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 86,
+        "b_index": 86,
+        "a_id": 97,
+        "b_id": 97,
+        "a_label": "rubble",
+        "b_label": "rubble",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 87,
+        "b_index": 87,
+        "a_id": 98,
+        "b_id": 98,
+        "a_label": "rubble",
+        "b_label": "rubble",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 88,
+        "b_index": 88,
+        "a_id": 99,
+        "b_id": 99,
+        "a_label": "dumpster",
+        "b_label": "dumpster",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 89,
+        "b_index": 89,
+        "a_id": 100,
+        "b_id": 100,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 90,
+        "b_index": 90,
+        "a_id": 101,
+        "b_id": 101,
+        "a_label": "concrete perimeter wall",
+        "b_label": "concrete perimeter wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 91,
+        "b_index": 91,
+        "a_id": 102,
+        "b_id": 102,
+        "a_label": "concrete perimeter wall",
+        "b_label": "concrete perimeter wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 92,
+        "b_index": 92,
+        "a_id": 103,
+        "b_id": 103,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 93,
+        "b_index": 93,
+        "a_id": 104,
+        "b_id": 104,
+        "a_label": "mobile crane",
+        "b_label": "mobile crane",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 94,
+        "b_index": 94,
+        "a_id": 105,
+        "b_id": 105,
+        "a_label": "garbage pile",
+        "b_label": "garbage pile",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 95,
+        "b_index": 95,
+        "a_id": 106,
+        "b_id": 106,
+        "a_label": "structural steel",
+        "b_label": "structural steel",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 96,
+        "b_index": 96,
+        "a_id": 107,
+        "b_id": 107,
+        "a_label": "steel column",
+        "b_label": "steel column",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 97,
+        "b_index": 97,
+        "a_id": 108,
+        "b_id": 108,
+        "a_label": "site wall",
+        "b_label": "site wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 98,
+        "b_index": 98,
+        "a_id": 109,
+        "b_id": 109,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 99,
+        "b_index": 99,
+        "a_id": 110,
+        "b_id": 110,
+        "a_label": "dumpster",
+        "b_label": "dumpster",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 100,
+        "b_index": 100,
+        "a_id": 111,
+        "b_id": 111,
+        "a_label": "retaining wall",
+        "b_label": "retaining wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 101,
+        "b_index": 101,
+        "a_id": 112,
+        "b_id": 112,
+        "a_label": "steel column",
+        "b_label": "steel column",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 102,
+        "b_index": 102,
+        "a_id": 114,
+        "b_id": 114,
+        "a_label": "retaining wall",
+        "b_label": "retaining wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 103,
+        "b_index": 103,
+        "a_id": 115,
+        "b_id": 115,
+        "a_label": "site wall",
+        "b_label": "site wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 104,
+        "b_index": 104,
+        "a_id": 116,
+        "b_id": 116,
+        "a_label": "site wall",
+        "b_label": "site wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 105,
+        "b_index": 105,
+        "a_id": 117,
+        "b_id": 117,
+        "a_label": "dumpster",
+        "b_label": "dumpster",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 106,
+        "b_index": 106,
+        "a_id": 118,
+        "b_id": 118,
+        "a_label": "metal rebar cage",
+        "b_label": "metal rebar cage",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 107,
+        "b_index": 107,
+        "a_id": 119,
+        "b_id": 119,
+        "a_label": "external wall",
+        "b_label": "external wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 108,
+        "b_index": 108,
+        "a_id": 120,
+        "b_id": 120,
+        "a_label": "dumpster",
+        "b_label": "dumpster",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 109,
+        "b_index": 109,
+        "a_id": 121,
+        "b_id": 121,
+        "a_label": "metal rebar cage",
+        "b_label": "metal rebar cage",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 110,
+        "b_index": 110,
+        "a_id": 122,
+        "b_id": 122,
+        "a_label": "metal pipe",
+        "b_label": "metal pipe",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 111,
+        "b_index": 111,
+        "a_id": 123,
+        "b_id": 123,
+        "a_label": "rubble",
+        "b_label": "rubble",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 112,
+        "b_index": 112,
+        "a_id": 124,
+        "b_id": 124,
+        "a_label": "trailer truck",
+        "b_label": "trailer truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 113,
+        "b_index": 113,
+        "a_id": 125,
+        "b_id": 125,
+        "a_label": "truck",
+        "b_label": "truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 114,
+        "b_index": 114,
+        "a_id": 126,
+        "b_id": 126,
+        "a_label": "I-beam",
+        "b_label": "I-beam",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 115,
+        "b_index": 115,
+        "a_id": 127,
+        "b_id": 127,
+        "a_label": "truck",
+        "b_label": "truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 116,
+        "b_index": 116,
+        "a_id": 128,
+        "b_id": 128,
+        "a_label": "truck",
+        "b_label": "truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 117,
+        "b_index": 117,
+        "a_id": 129,
+        "b_id": 129,
+        "a_label": "dumpster",
+        "b_label": "dumpster",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 118,
+        "b_index": 118,
+        "a_id": 130,
+        "b_id": 130,
+        "a_label": "external wall",
+        "b_label": "external wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 119,
+        "b_index": 119,
+        "a_id": 131,
+        "b_id": 131,
+        "a_label": "dumpster",
+        "b_label": "dumpster",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 120,
+        "b_index": 120,
+        "a_id": 132,
+        "b_id": 132,
+        "a_label": "trailer truck",
+        "b_label": "trailer truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 121,
+        "b_index": 121,
+        "a_id": 133,
+        "b_id": 133,
+        "a_label": "concrete perimeter wall",
+        "b_label": "concrete perimeter wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 122,
+        "b_index": 122,
+        "a_id": 134,
+        "b_id": 134,
+        "a_label": "dumpster",
+        "b_label": "dumpster",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 123,
+        "b_index": 123,
+        "a_id": 135,
+        "b_id": 135,
+        "a_label": "trailer truck",
+        "b_label": "trailer truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 124,
+        "b_index": 124,
+        "a_id": 136,
+        "b_id": 136,
+        "a_label": "concrete perimeter wall",
+        "b_label": "concrete perimeter wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 125,
+        "b_index": 125,
+        "a_id": 137,
+        "b_id": 137,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 126,
+        "b_index": 126,
+        "a_id": 138,
+        "b_id": 138,
+        "a_label": "dumpster",
+        "b_label": "dumpster",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 127,
+        "b_index": 127,
+        "a_id": 139,
+        "b_id": 139,
+        "a_label": "steel column",
+        "b_label": "steel column",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 128,
+        "b_index": 128,
+        "a_id": 140,
+        "b_id": 140,
+        "a_label": "site wall",
+        "b_label": "site wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 129,
+        "b_index": 129,
+        "a_id": 141,
+        "b_id": 141,
+        "a_label": "trailer truck",
+        "b_label": "trailer truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 130,
+        "b_index": 130,
+        "a_id": 142,
+        "b_id": 142,
+        "a_label": "retaining wall",
+        "b_label": "retaining wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 131,
+        "b_index": 131,
+        "a_id": 143,
+        "b_id": 143,
+        "a_label": "water truck",
+        "b_label": "water truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 132,
+        "b_index": 132,
+        "a_id": 144,
+        "b_id": 144,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 133,
+        "b_index": 133,
+        "a_id": 145,
+        "b_id": 145,
+        "a_label": "dumpster",
+        "b_label": "dumpster",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 134,
+        "b_index": 134,
+        "a_id": 146,
+        "b_id": 146,
+        "a_label": "concrete perimeter wall",
+        "b_label": "concrete perimeter wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 135,
+        "b_index": 135,
+        "a_id": 147,
+        "b_id": 147,
+        "a_label": "external wall",
+        "b_label": "external wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 136,
+        "b_index": 136,
+        "a_id": 148,
+        "b_id": 148,
+        "a_label": "site container",
+        "b_label": "site container",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 137,
+        "b_index": 137,
+        "a_id": 149,
+        "b_id": 149,
+        "a_label": "dumpster",
+        "b_label": "dumpster",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 138,
+        "b_index": 138,
+        "a_id": 150,
+        "b_id": 150,
+        "a_label": "dumpster",
+        "b_label": "dumpster",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 139,
+        "b_index": 139,
+        "a_id": 151,
+        "b_id": 151,
+        "a_label": "structural steel",
+        "b_label": "structural steel",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 140,
+        "b_index": 140,
+        "a_id": 152,
+        "b_id": 152,
+        "a_label": "mobile crane",
+        "b_label": "mobile crane",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 141,
+        "b_index": 141,
+        "a_id": 153,
+        "b_id": 153,
+        "a_label": "site office container",
+        "b_label": "site office container",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 142,
+        "b_index": 142,
+        "a_id": 154,
+        "b_id": 154,
+        "a_label": "dumpster",
+        "b_label": "dumpster",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 143,
+        "b_index": 143,
+        "a_id": 155,
+        "b_id": 155,
+        "a_label": "trailer truck",
+        "b_label": "trailer truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 144,
+        "b_index": 144,
+        "a_id": 156,
+        "b_id": 156,
+        "a_label": "metal rebar cage",
+        "b_label": "metal rebar cage",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 145,
+        "b_index": 145,
+        "a_id": 157,
+        "b_id": 157,
+        "a_label": "concrete perimeter wall",
+        "b_label": "concrete perimeter wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 146,
+        "b_index": 146,
+        "a_id": 158,
+        "b_id": 158,
+        "a_label": "trailer truck",
+        "b_label": "trailer truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 147,
+        "b_index": 147,
+        "a_id": 159,
+        "b_id": 159,
+        "a_label": "site wall",
+        "b_label": "site wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 148,
+        "b_index": 148,
+        "a_id": 160,
+        "b_id": 160,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 149,
+        "b_index": 149,
+        "a_id": 161,
+        "b_id": 161,
+        "a_label": "storage container",
+        "b_label": "storage container",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 150,
+        "b_index": 150,
+        "a_id": 162,
+        "b_id": 162,
+        "a_label": "trailer truck",
+        "b_label": "trailer truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 151,
+        "b_index": 151,
+        "a_id": 163,
+        "b_id": 163,
+        "a_label": "mobile crane",
+        "b_label": "mobile crane",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 152,
+        "b_index": 152,
+        "a_id": 164,
+        "b_id": 164,
+        "a_label": "dumpster",
+        "b_label": "dumpster",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 153,
+        "b_index": 153,
+        "a_id": 165,
+        "b_id": 165,
+        "a_label": "trailer truck",
+        "b_label": "trailer truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 154,
+        "b_index": 154,
+        "a_id": 166,
+        "b_id": 166,
+        "a_label": "dumpster",
+        "b_label": "dumpster",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 155,
+        "b_index": 155,
+        "a_id": 167,
+        "b_id": 167,
+        "a_label": "steel column",
+        "b_label": "steel column",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 156,
+        "b_index": 156,
+        "a_id": 168,
+        "b_id": 168,
+        "a_label": "external wall",
+        "b_label": "external wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 157,
+        "b_index": 157,
+        "a_id": 169,
+        "b_id": 169,
+        "a_label": "dumpster",
+        "b_label": "dumpster",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 158,
+        "b_index": 158,
+        "a_id": 170,
+        "b_id": 170,
+        "a_label": "structural steel",
+        "b_label": "structural steel",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 159,
+        "b_index": 159,
+        "a_id": 171,
+        "b_id": 171,
+        "a_label": "concrete perimeter wall",
+        "b_label": "concrete perimeter wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 160,
+        "b_index": 160,
+        "a_id": 172,
+        "b_id": 172,
+        "a_label": "site container",
+        "b_label": "site container",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 161,
+        "b_index": 161,
+        "a_id": 173,
+        "b_id": 173,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 162,
+        "b_index": 162,
+        "a_id": 174,
+        "b_id": 174,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 163,
+        "b_index": 163,
+        "a_id": 175,
+        "b_id": 175,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 164,
+        "b_index": 164,
+        "a_id": 176,
+        "b_id": 176,
+        "a_label": "structural steel",
+        "b_label": "structural steel",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 165,
+        "b_index": 165,
+        "a_id": 177,
+        "b_id": 177,
+        "a_label": "concrete perimeter wall",
+        "b_label": "concrete perimeter wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 166,
+        "b_index": 166,
+        "a_id": 178,
+        "b_id": 178,
+        "a_label": "dumpster",
+        "b_label": "dumpster",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 167,
+        "b_index": 167,
+        "a_id": 179,
+        "b_id": 179,
+        "a_label": "site container",
+        "b_label": "site container",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 168,
+        "b_index": 168,
+        "a_id": 180,
+        "b_id": 180,
+        "a_label": "structural steel",
+        "b_label": "structural steel",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 169,
+        "b_index": 169,
+        "a_id": 181,
+        "b_id": 181,
+        "a_label": "site container",
+        "b_label": "site container",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 170,
+        "b_index": 170,
+        "a_id": 182,
+        "b_id": 182,
+        "a_label": "concrete wall",
+        "b_label": "concrete wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 171,
+        "b_index": 171,
+        "a_id": 183,
+        "b_id": 183,
+        "a_label": "concrete perimeter wall",
+        "b_label": "concrete perimeter wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 172,
+        "b_index": 172,
+        "a_id": 184,
+        "b_id": 184,
+        "a_label": "structural steel",
+        "b_label": "structural steel",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 173,
+        "b_index": 173,
+        "a_id": 185,
+        "b_id": 185,
+        "a_label": "truck",
+        "b_label": "truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 174,
+        "b_index": 174,
+        "a_id": 186,
+        "b_id": 186,
+        "a_label": "site container",
+        "b_label": "site container",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 175,
+        "b_index": 175,
+        "a_id": 187,
+        "b_id": 187,
+        "a_label": "concrete perimeter wall",
+        "b_label": "concrete perimeter wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 176,
+        "b_index": 176,
+        "a_id": 188,
+        "b_id": 188,
+        "a_label": "trailer truck",
+        "b_label": "trailer truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 177,
+        "b_index": 177,
+        "a_id": 189,
+        "b_id": 189,
+        "a_label": "site wall",
+        "b_label": "site wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 178,
+        "b_index": 178,
+        "a_id": 190,
+        "b_id": 190,
+        "a_label": "dumpster",
+        "b_label": "dumpster",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 179,
+        "b_index": 179,
+        "a_id": 191,
+        "b_id": 191,
+        "a_label": "concrete perimeter wall",
+        "b_label": "concrete perimeter wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 180,
+        "b_index": 180,
+        "a_id": 192,
+        "b_id": 192,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 181,
+        "b_index": 181,
+        "a_id": 193,
+        "b_id": 193,
+        "a_label": "rubble",
+        "b_label": "rubble",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 182,
+        "b_index": 182,
+        "a_id": 194,
+        "b_id": 194,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 183,
+        "b_index": 183,
+        "a_id": 195,
+        "b_id": 195,
+        "a_label": "rubble",
+        "b_label": "rubble",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 184,
+        "b_index": 184,
+        "a_id": 197,
+        "b_id": 197,
+        "a_label": "brick stack",
+        "b_label": "brick stack",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 185,
+        "b_index": 185,
+        "a_id": 198,
+        "b_id": 198,
+        "a_label": "perimeter wall",
+        "b_label": "perimeter wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 186,
+        "b_index": 186,
+        "a_id": 199,
+        "b_id": 199,
+        "a_label": "site office container",
+        "b_label": "site office container",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 187,
+        "b_index": 187,
+        "a_id": 200,
+        "b_id": 200,
+        "a_label": "concrete perimeter wall",
+        "b_label": "concrete perimeter wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 188,
+        "b_index": 188,
+        "a_id": 201,
+        "b_id": 201,
+        "a_label": "concrete perimeter wall",
+        "b_label": "concrete perimeter wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 189,
+        "b_index": 189,
+        "a_id": 202,
+        "b_id": 202,
+        "a_label": "site container",
+        "b_label": "site container",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 190,
+        "b_index": 190,
+        "a_id": 203,
+        "b_id": 203,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 191,
+        "b_index": 191,
+        "a_id": 204,
+        "b_id": 204,
+        "a_label": "site container",
+        "b_label": "site container",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 192,
+        "b_index": 192,
+        "a_id": 205,
+        "b_id": 205,
+        "a_label": "site container",
+        "b_label": "site container",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 193,
+        "b_index": 193,
+        "a_id": 206,
+        "b_id": 206,
+        "a_label": "dumpster",
+        "b_label": "dumpster",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 194,
+        "b_index": 194,
+        "a_id": 207,
+        "b_id": 207,
+        "a_label": "rubble",
+        "b_label": "rubble",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 195,
+        "b_index": 195,
+        "a_id": 208,
+        "b_id": 208,
+        "a_label": "site container",
+        "b_label": "site container",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 196,
+        "b_index": 196,
+        "a_id": 209,
+        "b_id": 209,
+        "a_label": "concrete perimeter wall",
+        "b_label": "concrete perimeter wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 197,
+        "b_index": 197,
+        "a_id": 210,
+        "b_id": 210,
+        "a_label": "concrete perimeter wall",
+        "b_label": "concrete perimeter wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 198,
+        "b_index": 198,
+        "a_id": 211,
+        "b_id": 211,
+        "a_label": "steel column",
+        "b_label": "steel column",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 199,
+        "b_index": 199,
+        "a_id": 212,
+        "b_id": 212,
+        "a_label": "steel column",
+        "b_label": "steel column",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 200,
+        "b_index": 200,
+        "a_id": 213,
+        "b_id": 213,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 201,
+        "b_index": 201,
+        "a_id": 214,
+        "b_id": 214,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 202,
+        "b_index": 202,
+        "a_id": 215,
+        "b_id": 215,
+        "a_label": "shipping container",
+        "b_label": "shipping container",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 203,
+        "b_index": 203,
+        "a_id": 216,
+        "b_id": 216,
+        "a_label": "concrete wall",
+        "b_label": "concrete wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 204,
+        "b_index": 204,
+        "a_id": 217,
+        "b_id": 217,
+        "a_label": "trailer truck",
+        "b_label": "trailer truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 205,
+        "b_index": 205,
+        "a_id": 218,
+        "b_id": 218,
+        "a_label": "concrete wall",
+        "b_label": "concrete wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 206,
+        "b_index": 206,
+        "a_id": 220,
+        "b_id": 220,
+        "a_label": "structural steel",
+        "b_label": "structural steel",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 207,
+        "b_index": 207,
+        "a_id": 221,
+        "b_id": 221,
+        "a_label": "storage container",
+        "b_label": "storage container",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 208,
+        "b_index": 208,
+        "a_id": 223,
+        "b_id": 223,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 209,
+        "b_index": 209,
+        "a_id": 224,
+        "b_id": 224,
+        "a_label": "trailer truck",
+        "b_label": "trailer truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 210,
+        "b_index": 210,
+        "a_id": 225,
+        "b_id": 225,
+        "a_label": "concrete perimeter wall",
+        "b_label": "concrete perimeter wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 211,
+        "b_index": 211,
+        "a_id": 226,
+        "b_id": 226,
+        "a_label": "concrete wall",
+        "b_label": "concrete wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 212,
+        "b_index": 212,
+        "a_id": 227,
+        "b_id": 227,
+        "a_label": "concrete perimeter wall",
+        "b_label": "concrete perimeter wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 213,
+        "b_index": 213,
+        "a_id": 228,
+        "b_id": 228,
+        "a_label": "mobile crane",
+        "b_label": "mobile crane",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 214,
+        "b_index": 214,
+        "a_id": 229,
+        "b_id": 229,
+        "a_label": "concrete perimeter wall",
+        "b_label": "concrete perimeter wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 215,
+        "b_index": 215,
+        "a_id": 230,
+        "b_id": 230,
+        "a_label": "site container",
+        "b_label": "site container",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 216,
+        "b_index": 216,
+        "a_id": 231,
+        "b_id": 231,
+        "a_label": "site container",
+        "b_label": "site container",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 217,
+        "b_index": 217,
+        "a_id": 232,
+        "b_id": 232,
+        "a_label": "mobile crane",
+        "b_label": "mobile crane",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 218,
+        "b_index": 218,
+        "a_id": 233,
+        "b_id": 233,
+        "a_label": "trailer truck",
+        "b_label": "trailer truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 219,
+        "b_index": 219,
+        "a_id": 234,
+        "b_id": 234,
+        "a_label": "shipping container",
+        "b_label": "shipping container",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 220,
+        "b_index": 220,
+        "a_id": 235,
+        "b_id": 235,
+        "a_label": "trailer truck",
+        "b_label": "trailer truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 221,
+        "b_index": 221,
+        "a_id": 236,
+        "b_id": 236,
+        "a_label": "concrete perimeter wall",
+        "b_label": "concrete perimeter wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 222,
+        "b_index": 222,
+        "a_id": 237,
+        "b_id": 237,
+        "a_label": "dumpster",
+        "b_label": "dumpster",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 223,
+        "b_index": 223,
+        "a_id": 238,
+        "b_id": 238,
+        "a_label": "shipping container",
+        "b_label": "shipping container",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 224,
+        "b_index": 224,
+        "a_id": 239,
+        "b_id": 239,
+        "a_label": "site container",
+        "b_label": "site container",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 225,
+        "b_index": 225,
+        "a_id": 240,
+        "b_id": 240,
+        "a_label": "external wall",
+        "b_label": "external wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 226,
+        "b_index": 226,
+        "a_id": 241,
+        "b_id": 241,
+        "a_label": "external wall",
+        "b_label": "external wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 227,
+        "b_index": 227,
+        "a_id": 242,
+        "b_id": 242,
+        "a_label": "concrete perimeter wall",
+        "b_label": "concrete perimeter wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 228,
+        "b_index": 228,
+        "a_id": 243,
+        "b_id": 243,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 229,
+        "b_index": 229,
+        "a_id": 244,
+        "b_id": 244,
+        "a_label": "concrete perimeter wall",
+        "b_label": "concrete perimeter wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 230,
+        "b_index": 230,
+        "a_id": 245,
+        "b_id": 245,
+        "a_label": "dumpster",
+        "b_label": "dumpster",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 231,
+        "b_index": 231,
+        "a_id": 246,
+        "b_id": 246,
+        "a_label": "concrete perimeter wall",
+        "b_label": "concrete perimeter wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 232,
+        "b_index": 232,
+        "a_id": 247,
+        "b_id": 247,
+        "a_label": "mobile crane",
+        "b_label": "mobile crane",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 233,
+        "b_index": 233,
+        "a_id": 248,
+        "b_id": 248,
+        "a_label": "structural steel",
+        "b_label": "structural steel",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 234,
+        "b_index": 234,
+        "a_id": 249,
+        "b_id": 249,
+        "a_label": "external wall",
+        "b_label": "external wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 235,
+        "b_index": 235,
+        "a_id": 250,
+        "b_id": 250,
+        "a_label": "concrete wall",
+        "b_label": "concrete wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 236,
+        "b_index": 236,
+        "a_id": 251,
+        "b_id": 251,
+        "a_label": "mobile crane",
+        "b_label": "mobile crane",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 237,
+        "b_index": 237,
+        "a_id": 252,
+        "b_id": 252,
+        "a_label": "trailer truck",
+        "b_label": "trailer truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 238,
+        "b_index": 238,
+        "a_id": 253,
+        "b_id": 253,
+        "a_label": "mobile crane",
+        "b_label": "mobile crane",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 239,
+        "b_index": 239,
+        "a_id": 254,
+        "b_id": 254,
+        "a_label": "external wall",
+        "b_label": "external wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 240,
+        "b_index": 240,
+        "a_id": 255,
+        "b_id": 255,
+        "a_label": "concrete perimeter wall",
+        "b_label": "concrete perimeter wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 241,
+        "b_index": 241,
+        "a_id": 256,
+        "b_id": 256,
+        "a_label": "rubble",
+        "b_label": "rubble",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 242,
+        "b_index": 242,
+        "a_id": 257,
+        "b_id": 257,
+        "a_label": "dump truck",
+        "b_label": "dump truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 243,
+        "b_index": 243,
+        "a_id": 258,
+        "b_id": 258,
+        "a_label": "dumpster",
+        "b_label": "dumpster",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 244,
+        "b_index": 244,
+        "a_id": 259,
+        "b_id": 259,
+        "a_label": "shipping container",
+        "b_label": "shipping container",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 245,
+        "b_index": 245,
+        "a_id": 260,
+        "b_id": 260,
+        "a_label": "rubble",
+        "b_label": "rubble",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 246,
+        "b_index": 246,
+        "a_id": 261,
+        "b_id": 261,
+        "a_label": "site container",
+        "b_label": "site container",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 247,
+        "b_index": 247,
+        "a_id": 262,
+        "b_id": 262,
+        "a_label": "concrete wall",
+        "b_label": "concrete wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 248,
+        "b_index": 248,
+        "a_id": 263,
+        "b_id": 263,
+        "a_label": "dumpster",
+        "b_label": "dumpster",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 249,
+        "b_index": 249,
+        "a_id": 264,
+        "b_id": 264,
+        "a_label": "dump truck",
+        "b_label": "dump truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 250,
+        "b_index": 250,
+        "a_id": 265,
+        "b_id": 265,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 251,
+        "b_index": 251,
+        "a_id": 266,
+        "b_id": 266,
+        "a_label": "dumpster",
+        "b_label": "dumpster",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 252,
+        "b_index": 252,
+        "a_id": 267,
+        "b_id": 267,
+        "a_label": "mobile crane",
+        "b_label": "mobile crane",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 253,
+        "b_index": 253,
+        "a_id": 268,
+        "b_id": 268,
+        "a_label": "structural steel",
+        "b_label": "structural steel",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 254,
+        "b_index": 254,
+        "a_id": 269,
+        "b_id": 269,
+        "a_label": "perimeter wall",
+        "b_label": "perimeter wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 255,
+        "b_index": 255,
+        "a_id": 270,
+        "b_id": 270,
+        "a_label": "shipping container",
+        "b_label": "shipping container",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 256,
+        "b_index": 256,
+        "a_id": 271,
+        "b_id": 271,
+        "a_label": "I-beam",
+        "b_label": "I-beam",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 257,
+        "b_index": 257,
+        "a_id": 272,
+        "b_id": 272,
+        "a_label": "rebar cage",
+        "b_label": "rebar cage",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 258,
+        "b_index": 258,
+        "a_id": 273,
+        "b_id": 273,
+        "a_label": "storage container",
+        "b_label": "storage container",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 259,
+        "b_index": 259,
+        "a_id": 274,
+        "b_id": 274,
+        "a_label": "dumpster",
+        "b_label": "dumpster",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 260,
+        "b_index": 260,
+        "a_id": 275,
+        "b_id": 275,
+        "a_label": "trailer truck",
+        "b_label": "trailer truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 261,
+        "b_index": 261,
+        "a_id": 276,
+        "b_id": 276,
+        "a_label": "mobile crane",
+        "b_label": "mobile crane",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 262,
+        "b_index": 262,
+        "a_id": 277,
+        "b_id": 277,
+        "a_label": "mobile crane",
+        "b_label": "mobile crane",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 263,
+        "b_index": 263,
+        "a_id": 278,
+        "b_id": 278,
+        "a_label": "dumpster",
+        "b_label": "dumpster",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 264,
+        "b_index": 264,
+        "a_id": 279,
+        "b_id": 279,
+        "a_label": "metal rebar",
+        "b_label": "metal rebar",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 265,
+        "b_index": 265,
+        "a_id": 280,
+        "b_id": 280,
+        "a_label": "dumpster",
+        "b_label": "dumpster",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 266,
+        "b_index": 266,
+        "a_id": 281,
+        "b_id": 281,
+        "a_label": "rubble",
+        "b_label": "rubble",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 267,
+        "b_index": 267,
+        "a_id": 282,
+        "b_id": 282,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 268,
+        "b_index": 268,
+        "a_id": 283,
+        "b_id": 283,
+        "a_label": "concrete perimeter wall",
+        "b_label": "concrete perimeter wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 269,
+        "b_index": 269,
+        "a_id": 284,
+        "b_id": 284,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 270,
+        "b_index": 270,
+        "a_id": 285,
+        "b_id": 285,
+        "a_label": "rubble",
+        "b_label": "rubble",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 271,
+        "b_index": 271,
+        "a_id": 286,
+        "b_id": 286,
+        "a_label": "site container",
+        "b_label": "site container",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 272,
+        "b_index": 272,
+        "a_id": 287,
+        "b_id": 287,
+        "a_label": "mobile crane",
+        "b_label": "mobile crane",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 273,
+        "b_index": 273,
+        "a_id": 288,
+        "b_id": 288,
+        "a_label": "site office container",
+        "b_label": "site office container",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 274,
+        "b_index": 274,
+        "a_id": 289,
+        "b_id": 289,
+        "a_label": "mobile crane",
+        "b_label": "mobile crane",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 275,
+        "b_index": 275,
+        "a_id": 290,
+        "b_id": 290,
+        "a_label": "dumpster",
+        "b_label": "dumpster",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 276,
+        "b_index": 276,
+        "a_id": 291,
+        "b_id": 291,
+        "a_label": "mobile crane",
+        "b_label": "mobile crane",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 277,
+        "b_index": 277,
+        "a_id": 292,
+        "b_id": 292,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 278,
+        "b_index": 278,
+        "a_id": 293,
+        "b_id": 293,
+        "a_label": "metal rebar cage",
+        "b_label": "metal rebar cage",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 279,
+        "b_index": 279,
+        "a_id": 294,
+        "b_id": 294,
+        "a_label": "shipping container",
+        "b_label": "shipping container",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 280,
+        "b_index": 280,
+        "a_id": 295,
+        "b_id": 295,
+        "a_label": "rubble",
+        "b_label": "rubble",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 281,
+        "b_index": 281,
+        "a_id": 296,
+        "b_id": 296,
+        "a_label": "site wall",
+        "b_label": "site wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 282,
+        "b_index": 282,
+        "a_id": 297,
+        "b_id": 297,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 283,
+        "b_index": 283,
+        "a_id": 298,
+        "b_id": 298,
+        "a_label": "mobile crane",
+        "b_label": "mobile crane",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 284,
+        "b_index": 284,
+        "a_id": 299,
+        "b_id": 299,
+        "a_label": "dump truck",
+        "b_label": "dump truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 285,
+        "b_index": 285,
+        "a_id": 300,
+        "b_id": 300,
+        "a_label": "dumpster",
+        "b_label": "dumpster",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 286,
+        "b_index": 286,
+        "a_id": 301,
+        "b_id": 301,
+        "a_label": "site wall",
+        "b_label": "site wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 287,
+        "b_index": 287,
+        "a_id": 302,
+        "b_id": 302,
+        "a_label": "site office container",
+        "b_label": "site office container",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 288,
+        "b_index": 288,
+        "a_id": 303,
+        "b_id": 303,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 289,
+        "b_index": 289,
+        "a_id": 304,
+        "b_id": 304,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 290,
+        "b_index": 290,
+        "a_id": 305,
+        "b_id": 305,
+        "a_label": "mobile crane",
+        "b_label": "mobile crane",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 291,
+        "b_index": 291,
+        "a_id": 306,
+        "b_id": 306,
+        "a_label": "mobile crane",
+        "b_label": "mobile crane",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 292,
+        "b_index": 292,
+        "a_id": 307,
+        "b_id": 307,
+        "a_label": "water truck",
+        "b_label": "water truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 293,
+        "b_index": 293,
+        "a_id": 308,
+        "b_id": 308,
+        "a_label": "rubble",
+        "b_label": "rubble",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 294,
+        "b_index": 294,
+        "a_id": 309,
+        "b_id": 309,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 295,
+        "b_index": 295,
+        "a_id": 310,
+        "b_id": 310,
+        "a_label": "trailer truck",
+        "b_label": "trailer truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 296,
+        "b_index": 296,
+        "a_id": 311,
+        "b_id": 311,
+        "a_label": "mobile crane",
+        "b_label": "mobile crane",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 297,
+        "b_index": 297,
+        "a_id": 312,
+        "b_id": 312,
+        "a_label": "construction debris",
+        "b_label": "construction debris",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 298,
+        "b_index": 298,
+        "a_id": 313,
+        "b_id": 313,
+        "a_label": "trailer truck",
+        "b_label": "trailer truck",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 299,
+        "b_index": 299,
+        "a_id": 314,
+        "b_id": 314,
+        "a_label": "site wall",
+        "b_label": "site wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 300,
+        "b_index": 300,
+        "a_id": 315,
+        "b_id": 315,
+        "a_label": "site wall",
+        "b_label": "site wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 301,
+        "b_index": 301,
+        "a_id": 316,
+        "b_id": 316,
+        "a_label": "mobile crane",
+        "b_label": "mobile crane",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 302,
+        "b_index": 302,
+        "a_id": 317,
+        "b_id": 317,
+        "a_label": "site wall",
+        "b_label": "site wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 303,
+        "b_index": 303,
+        "a_id": 318,
+        "b_id": 318,
+        "a_label": "site wall",
+        "b_label": "site wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 304,
+        "b_index": 304,
+        "a_id": 319,
+        "b_id": 319,
+        "a_label": "mobile crane",
+        "b_label": "mobile crane",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 305,
+        "b_index": 305,
+        "a_id": 320,
+        "b_id": 320,
+        "a_label": "mobile crane",
+        "b_label": "mobile crane",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 306,
+        "b_index": 306,
+        "a_id": 321,
+        "b_id": 321,
+        "a_label": "site wall",
+        "b_label": "site wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 307,
+        "b_index": 307,
+        "a_id": 322,
+        "b_id": 322,
+        "a_label": "external wall",
+        "b_label": "external wall",
+        "label_changed": false
+      },
+      {
+        "dist_m": 0.0,
+        "a_index": 308,
+        "b_index": 308,
+        "a_id": 323,
+        "b_id": 323,
+        "a_label": "site wall",
+        "b_label": "site wall",
+        "label_changed": false
+      }
+    ],
+    "label_change_samples": [],
+    "unmatched_baseline_indices": [],
+    "unmatched_experiment_indices": []
+  },
+  "match_dist_m": 2.0
+}

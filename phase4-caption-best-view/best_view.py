@@ -217,11 +217,12 @@ def find_best_detection_for_object(
             if dist > float(max_center_dist_m):
                 continue
 
-            sim = 0.0
+            # Zero / near-zero feature vectors are common when mask-pooled
+            # DINOv3 had no support; treat them as missing so crops still work.
+            sim = 0.5
             if obj_feat is not None and pack_feats is not None and di < pack_feats.shape[0]:
-                sim = _cosine(obj_feat, pack_feats[di])
-            elif obj_feat is None:
-                sim = 0.5  # no features → rely on score/dist only
+                if float(torch.linalg.vector_norm(obj_feat)) >= 1e-6:
+                    sim = _cosine(obj_feat, pack_feats[di])
             if sim < float(feat_sim_min):
                 continue
 

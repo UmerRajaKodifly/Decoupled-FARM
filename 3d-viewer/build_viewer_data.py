@@ -415,20 +415,17 @@ def main() -> int:
     print(f"[build] Objects with Stella pts: {n_with_pts}/{n_active}")
 
     # ------------------------------------------------------------------
-    # Copy / symlink crops dir
-    # ------------------------------------------------------------------
+    # Always copy crops into output dir (portable for host + compare viewers).
     crops_out_dir = args.output_dir / "crops"
     if args.crops_dir and args.crops_dir.is_dir():
-        if crops_out_dir.is_symlink():
-            crops_out_dir.unlink()
-        if crops_out_dir.is_dir():
-            shutil.rmtree(crops_out_dir)
-        try:
-            os.symlink(args.crops_dir.resolve(), crops_out_dir)
-            print(f"[build] Crops symlink: {crops_out_dir} → {args.crops_dir.resolve()}")
-        except OSError:
-            shutil.copytree(str(args.crops_dir), str(crops_out_dir))
-            print(f"[build] Crops copied to {crops_out_dir}")
+        if crops_out_dir.exists():
+            if crops_out_dir.is_symlink():
+                crops_out_dir.unlink()
+            else:
+                shutil.rmtree(crops_out_dir)
+        shutil.copytree(str(args.crops_dir), str(crops_out_dir), dirs_exist_ok=True)
+        n_crops = len(list(crops_out_dir.glob("*.jpg")))
+        print(f"[build] Crops copied: {n_crops} files → {crops_out_dir}")
 
     # ------------------------------------------------------------------
     # Write metadata.json
@@ -443,6 +440,8 @@ def main() -> int:
         "voxel_size": args.voxel_size,
         "stella_state": str(args.stella_state),
         "vocab_size": len(vocab),
+        "run_id": os.environ.get("PIPELINE_RUN_ID", ""),
+        "vocab_file": str(args.vocab_file) if args.vocab_file else "",
         "has_bg_cloud": n_bg > 0,
         "bg_cloud_file": "bg_cloud.bin" if n_bg > 0 else None,
         "objects_file": "objects.json",

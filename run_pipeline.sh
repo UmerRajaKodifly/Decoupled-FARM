@@ -24,6 +24,17 @@ ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 cd "${ROOT}"
 
 # ------------------------------------------------------------------
+# Full-video default — ignore inherited MAX_KFS from the shell
+# ------------------------------------------------------------------
+# Accidental smoke caps (e.g. export MAX_KFS=20) must not shrink runs.
+# Opt-in smoke test only: SMOKE_MAX_KFS=20 bash run_pipeline.sh
+if [[ -n "${SMOKE_MAX_KFS:-}" ]]; then
+  export MAX_KFS="${SMOKE_MAX_KFS}"
+else
+  unset MAX_KFS
+fi
+
+# ------------------------------------------------------------------
 # Video detection
 # ------------------------------------------------------------------
 VIDEO_FILE="${VIDEO_FILE:-}"
@@ -39,8 +50,28 @@ fi
 # ------------------------------------------------------------------
 # Run ID + per-run directory
 # ------------------------------------------------------------------
-export PIPELINE_RUN_ID="${PIPELINE_RUN_ID:-run_$(date +%Y%m%d_%H%M%S)}"
+# Fresh run directory every invocation. To continue a prior run:
+#   RESUME_RUN_ID=run_20260812_130739 SKIP_STELLA=1 bash run_pipeline.sh
+# Reuse Stella + DA3 from a baseline for experiments:
+#   EXPERIMENT_BASELINE_RUN_ID=run_20260812_130739 SKIP_STELLA=1 SKIP_DA3=1 bash run_pipeline.sh
+export PIPELINE_RUN_ID="${RESUME_RUN_ID:-}"
+if [[ -z "${PIPELINE_RUN_ID}" ]]; then
+  suffix=""
+  [[ "${DETECTOR:-yoloe}" == "sam3" ]] && suffix="_sam3"
+  export PIPELINE_RUN_ID="run_$(date +%Y%m%d_%H%M%S)${suffix}"
+fi
 RUN_DIR="${ROOT}/outputs/runs/${PIPELINE_RUN_ID}"
+
+# Experiment mode: symlink phase1 + phase1.5 from baseline (saves SLAM + DA3 time)
+if [[ -n "${EXPERIMENT_BASELINE_RUN_ID:-}" ]]; then
+  BASE_RUN="${ROOT}/outputs/runs/${EXPERIMENT_BASELINE_RUN_ID}"
+  if [[ ! -d "${BASE_RUN}/phase1.5" ]]; then
+    echo "ERROR: EXPERIMENT_BASELINE_RUN_ID=${EXPERIMENT_BASELINE_RUN_ID} missing phase1.5"
+    exit 1
+  fi
+  export SKIP_STELLA="${SKIP_STELLA:-1}"
+  export SKIP_DA3="${SKIP_DA3:-1}"
+fi
 
 # Archive any existing flat-layout outputs (legacy from before per-run isolation)
 _LEGACY_DIRS=()
@@ -81,6 +112,16 @@ mkdir -p \
   "${RUN_DIR}/validation/phase4" \
   "${ROOT}/outputs/logs/${PIPELINE_RUN_ID}"
 
+# Link phase1 / phase1.5 from baseline after empty dirs were created
+if [[ -n "${EXPERIMENT_BASELINE_RUN_ID:-}" ]]; then
+  BASE_RUN="${ROOT}/outputs/runs/${EXPERIMENT_BASELINE_RUN_ID}"
+  for phase in phase1 phase1.5; do
+    rm -rf "${RUN_DIR}/${phase}"
+    ln -sfn "${BASE_RUN}/${phase}" "${RUN_DIR}/${phase}"
+    echo "[$(date -Iseconds)] Linked ${phase} ← ${EXPERIMENT_BASELINE_RUN_ID}" >> "${ROOT}/outputs/logs/${PIPELINE_RUN_ID}/pipeline.log" 2>/dev/null || true
+  done
+fi
+
 # Export per-phase host paths for docker-compose volume substitution
 export RUN_PHASE1_HOST="${RUN_DIR}/phase1"
 export RUN_PHASE15_HOST="${RUN_DIR}/phase1.5"
@@ -91,6 +132,18 @@ export RUN_PHASE4_HOST="${RUN_DIR}/phase4"
 export RUN_VAL_HOST="${RUN_DIR}/validation"
 export PIPELINE_LOG_DIR="${ROOT}/outputs/logs"
 export VIDEO_FILE
+export CONSTRUCTION_VOCAB="${CONSTRUCTION_VOCAB:-${ROOT}/vocab/construction_vocab.txt}"
+# Docker farm service sees vocab under /vocab/
+if [[ "${CONSTRUCTION_VOCAB}" == "${ROOT}/vocab/"* ]]; then
+  export CONSTRUCTION_VOCAB_DOCKER="/vocab/${CONSTRUCTION_VOCAB#${ROOT}/vocab/}"
+else
+  export CONSTRUCTION_VOCAB_DOCKER="${CONSTRUCTION_VOCAB}"
+fi
+export YOLOE_CONF="${YOLOE_CONF:-}"
+export LABEL_MIN_SCORE="${LABEL_MIN_SCORE:-}"
+export LABEL_MARGIN="${LABEL_MARGIN:-}"
+export DETECTOR="${DETECTOR:-yoloe}"
+export SAM3_CHECKPOINT="${SAM3_CHECKPOINT:-}"
 
 # Update latest symlink
 ln -sfn "runs/${PIPELINE_RUN_ID}" "${ROOT}/outputs/latest"
@@ -105,6 +158,10 @@ banner() {
     echo "  run_id  = ${PIPELINE_RUN_ID}"
     echo "  run_dir = outputs/runs/${PIPELINE_RUN_ID}/"
     echo "  video   = ${VIDEO_FILE}"
+    echo "  max_kfs = ${MAX_KFS:-all Stella keyframes}"
+    echo "  vocab   = ${CONSTRUCTION_VOCAB}"
+    echo "  detector= ${DETECTOR:-yoloe}"
+    [[ -n "${EXPERIMENT_BASELINE_RUN_ID:-}" ]] && echo "  baseline= ${EXPERIMENT_BASELINE_RUN_ID} (shared phase1/1.5)"
     echo "=================================================================="
   } | tee -a "${MERGED}"
 }
@@ -136,10 +193,14 @@ run_validate_host() {
 check_models() {
   local missing=0
   [[ -f "${ROOT}/models/orb_vocab.fbow" ]]              || { echo "missing orb_vocab.fbow"; missing=1; }
-  [[ -f "${ROOT}/models/yoloe/yoloe-v8l-seg.pt" ]]      || { echo "missing yoloe-v8l-seg.pt"; missing=1; }
-  [[ -f "${ROOT}/models/yoloe/yoloe-v8l-seg-pf.pt" ]]   || { echo "missing yoloe-v8l-seg-pf.pt"; missing=1; }
-  [[ -f "${ROOT}/models/mobileclip/mobileclip_blt.pt" ]] || { echo "missing mobileclip_blt.pt"; missing=1; }
   [[ -d "${ROOT}/models/dinov3-vits16" ]]                || { echo "missing dinov3-vits16/"; missing=1; }
+  if [[ "${DETECTOR:-yoloe}" == "sam3" ]]; then
+    [[ -f "${ROOT}/models/sam3/sam3.pt" ]] || { echo "missing models/sam3/sam3.pt (gated facebook/sam3; set HF_TOKEN and re-run bootstrap_models.sh)"; missing=1; }
+  else
+    [[ -f "${ROOT}/models/yoloe/yoloe-v8l-seg.pt" ]]      || { echo "missing yoloe-v8l-seg.pt"; missing=1; }
+    [[ -f "${ROOT}/models/yoloe/yoloe-v8l-seg-pf.pt" ]]   || { echo "missing yoloe-v8l-seg-pf.pt"; missing=1; }
+    [[ -f "${ROOT}/models/mobileclip/mobileclip_blt.pt" ]] || { echo "missing mobileclip_blt.pt"; missing=1; }
+  fi
   if [[ "${missing}" -ne 0 ]]; then
     echo "Run: bash ${ROOT}/bootstrap_models.sh"; exit 1
   fi
@@ -153,6 +214,13 @@ run_service() {
   docker compose run --rm \
     -e PIPELINE_RUN_ID="${PIPELINE_RUN_ID}" \
     -e VIDEO_FILE="${VIDEO_FILE}" \
+    -e MAX_KFS="${MAX_KFS:-}" \
+    -e CONSTRUCTION_VOCAB="${CONSTRUCTION_VOCAB_DOCKER:-${CONSTRUCTION_VOCAB}}" \
+    -e YOLOE_CONF="${YOLOE_CONF:-}" \
+    -e LABEL_MIN_SCORE="${LABEL_MIN_SCORE:-}" \
+    -e LABEL_MARGIN="${LABEL_MARGIN:-}" \
+    -e DETECTOR="${DETECTOR:-yoloe}" \
+    -e SAM3_CHECKPOINT="${SAM3_CHECKPOINT:-}" \
     -e RUN_PHASE1_HOST="${RUN_PHASE1_HOST}" \
     -e RUN_PHASE15_HOST="${RUN_PHASE15_HOST}" \
     -e RUN_PHASE2_HOST="${RUN_PHASE2_HOST}" \

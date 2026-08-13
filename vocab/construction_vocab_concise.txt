@@ -1,0 +1,11 @@
+debris
+dumpster
+rebar
+steel beam
+pipe
+container
+brick
+water tanker
+crane
+truck
+site wall

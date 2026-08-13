@@ -136,6 +136,7 @@ def run_phase2(
     batch_size: int = 4,
     stride: int = 1,
     vocab_file: Optional[Path] = None,
+    detector: str = "yoloe",
 ) -> Path:
     """Full Phase 2 pipeline.
 
@@ -185,18 +186,28 @@ def run_phase2(
     # Apply stride
     kf_order = kf_order[::stride]
     print(f"[phase2] keyframes to process: {len(kf_order)} "
-          f"(total={len(kf_groups)}, stride={stride})")
+          f"(total={len(kf_groups)}, stride={stride}, detector={detector})")
 
     # ------------------------------------------------------------------
-    # 2. Build segmenter (loads YOLOE + MobileCLIP vocab + DINOv3 once)
+    # 2. Build segmenter
     # ------------------------------------------------------------------
-    print("[phase2] loading YOLOE + DINOv3 …")
     t0 = time.time()
-    segmenter = ConstructionSegmenter(
-        vocab_file=vocab_file,
-        device=device,
-        conf=conf,
-    )
+    detector = (detector or "yoloe").strip().lower()
+    if detector == "sam3":
+        from sam3_segmenter import SAM3Segmenter
+        print("[phase2] loading SAM3 + DINOv3 …")
+        segmenter = SAM3Segmenter(
+            vocab_file=vocab_file,
+            device=device,
+            conf=conf,
+        )
+    else:
+        print("[phase2] loading YOLOE + DINOv3 …")
+        segmenter = ConstructionSegmenter(
+            vocab_file=vocab_file,
+            device=device,
+            conf=conf,
+        )
     print(f"[phase2] models loaded in {time.time()-t0:.1f}s  "
           f"(vocab={len(segmenter.names)} labels, feature_dim={segmenter.feature_dim})")
 
@@ -316,7 +327,8 @@ def run_phase2(
         seg_out["vocab"] = segmenter.names
 
         # Move heavy tensors to CPU before saving
-        for key in ("means", "cov6", "features", "scores", "class_ids", "batch_ids"):
+        for key in ("means", "cov6", "features", "scores", "class_ids", "batch_ids",
+                    "boxes_xyxy", "num_pixels", "det_points_flat", "det_points_offsets"):
             if key in seg_out and isinstance(seg_out[key], torch.Tensor):
                 seg_out[key] = seg_out[key].cpu()
         if "masks" in seg_out and isinstance(seg_out["masks"], (list, tuple)):
@@ -341,6 +353,7 @@ def run_phase2(
         "stride": stride,
         "vocab_size": len(segmenter.names),
         "feature_dim": segmenter.feature_dim,
+        "detector": detector,
     }
     summary_path = output_dir / "phase2_summary.json"
     with open(summary_path, "w") as f:
@@ -402,6 +415,29 @@ def _apply_world_transform(seg_out: dict, poses: List[torch.Tensor]) -> None:
     seg_out["means"] = means_w
     seg_out["cov6"] = cov6_w
 
+    flat = seg_out.get("det_points_flat")
+    offs = seg_out.get("det_points_offsets")
+    if (
+        isinstance(flat, torch.Tensor)
+        and flat.numel() > 0
+        and isinstance(offs, torch.Tensor)
+        and offs.numel() > 1
+    ):
+        points_w = flat.clone()
+        for det_i in range(int(offs.numel()) - 1):
+            s = int(offs[det_i].item())
+            e = int(offs[det_i + 1].item())
+            if e <= s:
+                continue
+            b = int(batch_ids_long[det_i].item()) if det_i < batch_ids_long.numel() else -1
+            if b < 0 or b >= len(poses):
+                continue
+            pose = poses[b].to(device=device, dtype=dtype)
+            R, t = pose[:3, :3], pose[:3, 3]
+            pts = flat[s:e].to(device=device, dtype=dtype)
+            points_w[s:e] = pts @ R.T + t
+        seg_out["det_points_flat"] = points_w
+
 
 # ---------------------------------------------------------------------------
 # CLI
@@ -447,6 +483,10 @@ def _parse_args() -> argparse.Namespace:
         "--vocab", type=Path, default=None,
         help="Override vocabulary file (default: vocab/construction_vocab.txt).",
     )
+    p.add_argument(
+        "--detector", default="yoloe", choices=["yoloe", "sam3"],
+        help="Phase 2 detector: yoloe (default) or sam3. Cuboid faces are used in both cases.",
+    )
     return p.parse_args()
 
 
@@ -464,4 +504,5 @@ if __name__ == "__main__":
         batch_size=args.batch_size,
         stride=args.stride,
         vocab_file=args.vocab,
+        detector=args.detector,
     )

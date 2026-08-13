@@ -96,15 +96,20 @@ services:
       DEVICE: ${DEVICE:-cuda}
       YOLOE_CONF: ${YOLOE_CONF:-0.35}
       KF_STRIDE: ${KF_STRIDE:-1}
+      DETECTOR: ${DETECTOR:-yoloe}
+      SAM3_CHECKPOINT: ${SAM3_CHECKPOINT:-/models/sam3/sam3.pt}
+      CONSTRUCTION_VOCAB: ${CONSTRUCTION_VOCAB:-/vocab/construction_vocab.txt}
+      LABEL_MIN_SCORE: ${LABEL_MIN_SCORE:-0.25}
+      LABEL_MARGIN: ${LABEL_MARGIN:-1.15}
       STRICT_VALIDATE: ${STRICT_VALIDATE:-0}
       FARM_ROOT: /farm_src
       SCENE_GRAPH_MODEL_DIR: /models
       MOBILECLIP_CHECKPOINT: /models/mobileclip/mobileclip_blt.pt
       MOBILECLIP_BLT_CKPT: /models/mobileclip/mobileclip_blt.pt
       MOBILECLIP_WEIGHTS_DIR: /models/mobileclip
-      CONSTRUCTION_VOCAB: /vocab/construction_vocab.txt
       NVIDIA_VISIBLE_DEVICES: all
       NVIDIA_DRIVER_CAPABILITIES: compute,utility
+      PYTORCH_CUDA_ALLOC_CONF: expandable_segments:True
     volumes:
       - ${RUN_PHASE1_HOST:-./outputs/phase1}:/phase1:ro
       - ${RUN_PHASE15_HOST:-./outputs/phase1.5}:/phase1.5:ro

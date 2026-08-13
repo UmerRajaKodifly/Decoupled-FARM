@@ -166,7 +166,7 @@ class Phase2DinoExtractor:
         batch_ids_valid = batch_ids_dev[valid_idx]
 
         # Resize masks to token grid in one batched call
-        masks_valid = masks[valid_idx].to(device=self.device, dtype=torch.float32)
+        masks_valid = masks.to(device=self.device, dtype=torch.float32)[valid_idx]
         masks_resized = F.interpolate(
             masks_valid.unsqueeze(1),
             size=(gH, gW),

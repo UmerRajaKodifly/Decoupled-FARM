@@ -24,7 +24,10 @@ VAL_OUT="${VALIDATION_DIR:-/validation}"
 DEVICE="${DEVICE:-cuda}"
 CONF="${YOLOE_CONF:-0.35}"
 STRIDE="${KF_STRIDE:-1}"
+DETECTOR="${DETECTOR:-yoloe}"
 STRICT="${STRICT_VALIDATE:-0}"
+LABEL_MIN="${LABEL_MIN_SCORE:-0.25}"
+LABEL_MARG="${LABEL_MARGIN:-1.15}"
 
 ts() { date -Iseconds; }
 
@@ -94,7 +97,8 @@ run_stage phase2 \
     --device "${DEVICE}" \
     --conf "${CONF}" \
     --stride "${STRIDE}" \
-    --vocab "${CONSTRUCTION_VOCAB}"
+    --vocab "${CONSTRUCTION_VOCAB}" \
+    --detector "${DETECTOR}"
 
 run_validate phase2 \
   python -u /workspace/phase2/validate_phase2.py \
@@ -109,7 +113,9 @@ run_stage phase3 \
   python -u /workspace/phase3/run_phase3.py \
     --det-dir "${PHASE2_OUT}" \
     --output-dir "${PHASE3_OUT}" \
-    --device "${DEVICE}"
+    --device "${DEVICE}" \
+    --label-min-score "${LABEL_MIN}" \
+    --label-margin "${LABEL_MARG}"
 
 run_validate phase3 \
   python -u /workspace/phase3/validate_phase3.py \
