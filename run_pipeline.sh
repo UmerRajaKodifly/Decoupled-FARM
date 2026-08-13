@@ -195,11 +195,23 @@ check_models() {
   [[ -f "${ROOT}/models/orb_vocab.fbow" ]]              || { echo "missing orb_vocab.fbow"; missing=1; }
   [[ -d "${ROOT}/models/dinov3-vits16" ]]                || { echo "missing dinov3-vits16/"; missing=1; }
   if [[ "${DETECTOR:-yoloe}" == "sam3" ]]; then
-    if [[ ! -f "${ROOT}/models/sam3/sam3.pt" && -n "${HF_TOKEN:-}" ]]; then
-      echo "[$(ts)] models/sam3/sam3.pt missing — fetching via bootstrap_models.sh (HF_TOKEN set)"
-      bash "${ROOT}/bootstrap_models.sh" --skip-da3 || true
+    # Runtime uses the baked image path /opt/sam3/sam3.pt. A host copy is only
+    # required when building/rebuilding the farm image.
+    if [[ ! -f "${ROOT}/models/sam3/sam3.pt" ]]; then
+      if docker image inspect farm-e2e-farm:latest >/dev/null 2>&1 \
+        && docker run --rm --entrypoint python3 farm-e2e-farm:latest -c \
+             "from pathlib import Path; raise SystemExit(0 if Path('/opt/sam3/sam3.pt').is_file() else 1)" \
+             >/dev/null 2>&1; then
+        echo "[$(ts)] SAM3 checkpoint present in farm image (/opt/sam3/sam3.pt)"
+      elif [[ -n "${HF_TOKEN:-}" ]]; then
+        echo "[$(ts)] models/sam3/sam3.pt missing — fetching via bootstrap_models.sh (needed to bake into image)"
+        bash "${ROOT}/bootstrap_models.sh" --skip-da3 || true
+        [[ -f "${ROOT}/models/sam3/sam3.pt" ]] || { echo "missing models/sam3/sam3.pt after bootstrap"; missing=1; }
+      else
+        echo "missing models/sam3/sam3.pt (needed to build farm image; or use an image that already bakes /opt/sam3/sam3.pt)"
+        missing=1
+      fi
     fi
-    [[ -f "${ROOT}/models/sam3/sam3.pt" ]] || { echo "missing models/sam3/sam3.pt (gated facebook/sam3; set HF_TOKEN and re-run bootstrap_models.sh)"; missing=1; }
   else
     [[ -f "${ROOT}/models/yoloe/yoloe-v8l-seg.pt" ]]      || { echo "missing yoloe-v8l-seg.pt"; missing=1; }
     [[ -f "${ROOT}/models/yoloe/yoloe-v8l-seg-pf.pt" ]]   || { echo "missing yoloe-v8l-seg-pf.pt"; missing=1; }

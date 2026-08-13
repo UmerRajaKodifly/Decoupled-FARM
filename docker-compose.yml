@@ -97,7 +97,7 @@ services:
       YOLOE_CONF: ${YOLOE_CONF:-0.35}
       KF_STRIDE: ${KF_STRIDE:-1}
       DETECTOR: ${DETECTOR:-yoloe}
-      SAM3_CHECKPOINT: ${SAM3_CHECKPOINT:-/models/sam3/sam3.pt}
+      SAM3_CHECKPOINT: ${SAM3_CHECKPOINT:-/opt/sam3/sam3.pt}
       CONSTRUCTION_VOCAB: ${CONSTRUCTION_VOCAB:-/vocab/construction_vocab.txt}
       LABEL_MIN_SCORE: ${LABEL_MIN_SCORE:-0.25}
       LABEL_MARGIN: ${LABEL_MARGIN:-1.15}

@@ -1,5 +1,7 @@
 # Keep farm image slim — models and outputs are bind-mounted at runtime
 models
+!models/sam3/
+!models/sam3/sam3.pt
 outputs
 inputs
 **/.git
@@ -7,6 +9,7 @@ inputs
 **/__pycache__
 **/*.pyc
 **/*.pt
+!models/sam3/sam3.pt
 **/*.ply
 **/*.db
 **/*.fbow

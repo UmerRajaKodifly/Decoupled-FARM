@@ -56,10 +56,10 @@ RUN pip3 install --no-cache-dir -e /farm_src/third_party/yoloe \
  && pip3 install --no-cache-dir -e /farm_src --no-deps
 
 # SAM3 (text-prompt detector alternate to YOLOE).
-# Code + Python package live in the image; the gated checkpoint is NOT baked —
-# mount host models/sam3/sam3.pt (via bootstrap_models.sh + HF_TOKEN).
+# Package at /opt/sam3; checkpoint baked in (not under /models so the
+# host ./models bind-mount cannot shadow it).
 ARG SAM3_COMMIT=5dd401d1c5c1d5c3eedff06d41b77af824517619
-ENV SAM3_CHECKPOINT=/models/sam3/sam3.pt
+ENV SAM3_CHECKPOINT=/opt/sam3/sam3.pt
 RUN git clone https://github.com/facebookresearch/sam3.git /opt/sam3 \
  && cd /opt/sam3 && git checkout "${SAM3_COMMIT}" \
  && pip3 install --no-cache-dir --no-deps -e . \
@@ -67,6 +67,9 @@ RUN git clone https://github.com/facebookresearch/sam3.git /opt/sam3 \
         timm ftfy iopath pycocotools einops scikit-image \
  && python3 -c "from sam3.model_builder import build_sam3_image_model; from sam3.model.sam3_image_processor import Sam3Processor; print('SAM3 import OK')"
 
+# Requires models/sam3/sam3.pt on the build host (HF gated; bootstrap_models.sh).
+COPY models/sam3/sam3.pt /opt/sam3/sam3.pt
+RUN python3 -c "from pathlib import Path; p=Path('/opt/sam3/sam3.pt'); assert p.is_file() and p.stat().st_size > 1_000_000_000, p; print(f'SAM3 checkpoint OK ({p.stat().st_size} bytes)')"
 ENV PYTHONPATH=/workspace/common:/workspace/phase2:/workspace/phase3:/workspace/phase3.5-stella-geometry:/workspace/phase4-caption-best-view:/farm_src/src:${PYTHONPATH}
 
 ENTRYPOINT ["/workspace/farm_entrypoint.sh"]

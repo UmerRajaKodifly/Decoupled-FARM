@@ -4,18 +4,19 @@
 #
 # Packaging
 # ---------
-# • SAM3 *code* is baked into the farm Docker image (/opt/sam3) at build time.
-# • SAM3 *checkpoint* is gated on Hugging Face and lives on the host at
-#   models/sam3/sam3.pt (mounted into the container as /models/sam3/sam3.pt).
+# • SAM3 *code* + *checkpoint* are baked into the farm Docker image:
+#     /opt/sam3/              (Python package)
+#     /opt/sam3/sam3.pt       (~3.3 GB weights)
+# • Build host must have models/sam3/sam3.pt once (HF gated) so Docker can COPY it.
 #
 # Fresh machine / after git pull:
 #   1. Accept the license: https://huggingface.co/facebook/sam3
-#   2. HF_TOKEN=hf_... bash bootstrap_models.sh   # downloads sam3.pt (+ other weights)
+#   2. HF_TOKEN=hf_... bash bootstrap_models.sh   # only needed to *build* the image
 #   3. docker compose build farm                  # this script does this for you
-#   4. bash scripts/run_sam3.sh
+#   4. bash scripts/run_sam3.sh                   # runtime needs no host checkpoint
 #
 # Full pipeline without a baseline (runs Stella + DA3 + SAM3):
-#   HF_TOKEN=hf_... bash bootstrap_models.sh
+#   HF_TOKEN=hf_... bash bootstrap_models.sh      # first image build only
 #   docker compose build
 #   DETECTOR=sam3 bash run_pipeline.sh
 #
@@ -37,15 +38,15 @@ if [[ -z "${BASELINE_RUN_ID}" || ! -d "outputs/runs/${BASELINE_RUN_ID}/phase1.5"
   exit 1
 fi
 
-# Auto-fetch gated checkpoint when missing and HF_TOKEN is available
+# Checkpoint is required on the *build host* so Dockerfile can COPY it into the image.
 if [[ ! -f "${ROOT}/models/sam3/sam3.pt" ]]; then
   if [[ -n "${HF_TOKEN:-}" ]]; then
-    echo "models/sam3/sam3.pt missing — downloading via bootstrap_models.sh…"
+    echo "models/sam3/sam3.pt missing — downloading via bootstrap_models.sh (needed for image build)…"
     bash "${ROOT}/bootstrap_models.sh" --skip-da3
   fi
 fi
 if [[ ! -f "${ROOT}/models/sam3/sam3.pt" ]]; then
-  echo "ERROR: missing models/sam3/sam3.pt"
+  echo "ERROR: missing models/sam3/sam3.pt (required to bake weights into the farm image)"
   echo "  Accept the license at https://huggingface.co/facebook/sam3"
   echo "  then:  HF_TOKEN=... bash bootstrap_models.sh"
   exit 1
@@ -55,13 +56,12 @@ export EXPERIMENT_BASELINE_RUN_ID="${BASELINE_RUN_ID}"
 export SKIP_STELLA=1
 export SKIP_DA3=1
 export DETECTOR=sam3
-export SAM3_CHECKPOINT="${SAM3_CHECKPOINT:-/models/sam3/sam3.pt}"
+export SAM3_CHECKPOINT="${SAM3_CHECKPOINT:-/opt/sam3/sam3.pt}"
 export CONSTRUCTION_VOCAB="${CONSTRUCTION_VOCAB:-${ROOT}/vocab/construction_vocab.txt}"
 export YOLOE_CONF="${YOLOE_CONF:-0.35}"
 export LABEL_MIN_SCORE="${LABEL_MIN_SCORE:-0.25}"
 export LABEL_MARGIN="${LABEL_MARGIN:-1.15}"
 export VIDEO_FILE="${VIDEO_FILE:-export_video_2.mp4}"
-# Always rebuild farm so /opt/sam3 + phase2/sam3_segmenter.py match the repo
 export FORCE_BUILD="${FORCE_BUILD:-1}"
 
 echo "======================================================================"
@@ -69,20 +69,20 @@ echo "SAM3 farm experiment (shared Stella + DA3)"
 echo "  baseline geometry = ${BASELINE_RUN_ID}"
 echo "  vocab             = ${CONSTRUCTION_VOCAB}"
 echo "  conf              = ${YOLOE_CONF}"
-echo "  checkpoint        = models/sam3/sam3.pt"
+echo "  checkpoint        = /opt/sam3/sam3.pt (baked into farm image)"
 echo "======================================================================"
 
-echo "Building farm image (SAM3 package + Phase 2 code)…"
+echo "Building farm image (SAM3 package + baked checkpoint)…"
 docker compose build farm
 
-# Sanity: code import + checkpoint mount path
-docker compose run --rm --entrypoint python3 farm -c "
+docker compose run --rm --no-deps --entrypoint python3 farm -c "
 from sam3.model_builder import build_sam3_image_model
 from sam3.model.sam3_image_processor import Sam3Processor
-import importlib.util, pathlib
-assert pathlib.Path('/workspace/phase2/sam3_segmenter.py').is_file(), 'sam3_segmenter.py missing from image — rebuild farm'
-assert pathlib.Path('/models/sam3/sam3.pt').is_file(), 'checkpoint not mounted at /models/sam3/sam3.pt'
-print('SAM3 image OK: package + segmenter + checkpoint')
+import pathlib
+assert pathlib.Path('/workspace/phase2/sam3_segmenter.py').is_file(), 'sam3_segmenter.py missing from image'
+ckpt = pathlib.Path('/opt/sam3/sam3.pt')
+assert ckpt.is_file() and ckpt.stat().st_size > 1_000_000_000, f'baked checkpoint missing: {ckpt}'
+print(f'SAM3 image OK: package + segmenter + baked checkpoint ({ckpt.stat().st_size} bytes)')
 "
 
 bash "${ROOT}/run_pipeline.sh"

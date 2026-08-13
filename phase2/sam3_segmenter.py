@@ -145,7 +145,7 @@ class SAM3Segmenter:
         ckpt = Path(
             checkpoint
             or os.environ.get("SAM3_CHECKPOINT", "")
-            or "/models/sam3/sam3.pt"
+            or "/opt/sam3/sam3.pt"
         )
         if not ckpt.is_file():
             raise FileNotFoundError(

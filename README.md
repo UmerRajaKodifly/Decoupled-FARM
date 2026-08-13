@@ -177,9 +177,12 @@ cp /path/to/your_scan.mp4 inputs/scan.mp4
 docker compose build
 ```
 
-The **farm** image includes the SAM3 Python package (`/opt/sam3`). The 3.3 GB
-checkpoint is **not** stored in the image (gated + large); it is mounted from
-`models/sam3/sam3.pt` at runtime.
+The **farm** image includes the SAM3 Python package and the gated checkpoint at
+`/opt/sam3/sam3.pt` (baked at build time so the host `./models` mount cannot
+shadow it). Building the image once requires `models/sam3/sam3.pt` on the build
+host (`HF_TOKEN=… bash bootstrap_models.sh` after accepting the
+[facebook/sam3](https://huggingface.co/facebook/sam3) license). After that,
+runtime no longer needs a host copy of the weights.
 
 Or let `run_pipeline.sh` build automatically when images are missing. Force rebuild:
 
@@ -254,11 +257,18 @@ SAM3 replaces only Phase 2 detection. Stella / DA3 / Phase 3–4 stay the same.
 
 | Piece | Where |
 |---|---|
-| SAM3 Python package | Baked into `farm-e2e-farm` image at `/opt/sam3` during `docker compose build farm` |
+| SAM3 Python package | Baked into `farm-e2e-farm` at `/opt/sam3` |
 | Phase 2 wiring (`sam3_segmenter.py`, `--detector sam3`) | Copied into the farm image from the repo |
-| Checkpoint `sam3.pt` (~3.3 GB, gated) | Host `models/sam3/sam3.pt` → mounted as `/models/sam3/sam3.pt` |
+| Checkpoint `sam3.pt` (~3.3 GB) | Baked into the farm image at `/opt/sam3/sam3.pt` |
 
-After `git pull`, rebuild the farm image so Phase 2 code matches the repo:
+Build host needs `models/sam3/sam3.pt` once so Docker can `COPY` it (not stored in git — gated). After the image exists, pulls/runs use the baked weights.
+
+```bash
+HF_TOKEN=hf_... bash bootstrap_models.sh   # once on the build machine
+docker compose build farm
+```
+
+After `git pull`, rebuild so Phase 2 code matches the repo:
 
 ```bash
 docker compose build farm
@@ -267,7 +277,8 @@ docker compose build farm
 **Full run with SAM3**
 
 ```bash
-# once: accept https://huggingface.co/facebook/sam3 then:
+# once on the machine that builds the image:
+# accept https://huggingface.co/facebook/sam3 then:
 HF_TOKEN=hf_... bash bootstrap_models.sh
 docker compose build
 DETECTOR=sam3 VIDEO_FILE=scan.mp4 bash run_pipeline.sh
@@ -277,10 +288,10 @@ DETECTOR=sam3 VIDEO_FILE=scan.mp4 bash run_pipeline.sh
 
 ```bash
 bash scripts/snapshot_baseline.sh   # once, pins outputs/baselines/manifest.json
-HF_TOKEN=hf_... bash scripts/run_sam3.sh
+bash scripts/run_sam3.sh            # rebuilds farm (needs host sam3.pt only if baking anew)
 ```
 
-`run_sam3.sh` rebuilds the farm image, checks that the SAM3 package + checkpoint are visible inside the container, then runs Phase 2–4 with `DETECTOR=sam3`.
+`run_sam3.sh` rebuilds the farm image and checks that the SAM3 package + baked checkpoint are present inside the container, then runs Phase 2–4 with `DETECTOR=sam3`.
 
 ### 5.3 Smoke test (faster)
 
