@@ -16,8 +16,19 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#111;color:#e0e0e0;h
 #toolbar h1{font-size:13px;font-weight:600;color:#ccc;white-space:nowrap;margin-right:6px}
 #search{
   padding:4px 10px;border-radius:5px;border:1px solid #444;background:#252525;
-  color:#ddd;font-size:12px;width:180px
+  color:#ddd;font-size:12px;width:160px
 }
+#query-input{
+  padding:4px 10px;border-radius:5px;border:1px solid #3a5a3a;background:#1a2a1a;
+  color:#ddd;font-size:12px;width:220px
+}
+#btn-query{
+  padding:4px 12px;border-radius:5px;border:1px solid #4a8a4a;background:#2a4a2a;
+  color:#cfc;font-size:11px;cursor:pointer
+}
+#btn-query:disabled{opacity:0.5;cursor:default}
+#query-status{font-size:10px;color:#6a8a6a;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.obj-item.query-hit{border-left-color:#6a8a4a;background:#1a221a}
 #search::placeholder{color:#666}
 .toggle-group{display:flex;gap:6px;flex-wrap:wrap}
 .toggle-btn{
@@ -26,6 +37,18 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#111;color:#e0e0e0;h
 }
 .toggle-btn.active{background:#2a5a8a;border-color:#4a8ac4;color:#fff}
 #stats{font-size:11px;color:#666;margin-left:auto;white-space:nowrap}
+#exp-wrap{display:flex;align-items:center;gap:6px;font-size:11px;color:#888}
+#inp-experiment{
+  padding:3px 6px;background:#222;border:1px solid #444;color:#ddd;
+  border-radius:4px;font-size:11px;max-width:340px
+}
+#exp-note{font-size:10px;color:#666;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#exp-delta{
+  font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;
+  background:#1a2a1a;color:#7dca7d;border:1px solid #2a4a2a;white-space:nowrap
+}
+#exp-delta.worse{background:#2a1a1a;color:#ca7d7d;border-color:#4a2a2a}
+#exp-delta.neutral{background:#222;color:#888;border-color:#444}
 #loading-bar{
   position:fixed;top:0;left:0;height:3px;background:#4a8ac4;
   width:0%;transition:width .3s;z-index:1000
@@ -121,7 +144,15 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#111;color:#e0e0e0;h
 <!-- Toolbar -->
 <div id="toolbar">
   <h1>3D Memory Viewer</h1>
-  <input id="search" type="text" placeholder="Filter objects…"/>
+  <label id="exp-wrap" title="Cycle baseline vs fragmentation experiments">Run
+    <select id="inp-experiment"></select>
+  </label>
+  <span id="exp-note"></span>
+  <span id="exp-delta" class="neutral">—</span>
+  <input id="search" type="text" placeholder="Filter list…"/>
+  <input id="query-input" type="text" placeholder="Visual query (e.g. shipping container)"/>
+  <button id="btn-query" type="button">Search</button>
+  <span id="query-status"></span>
   <div class="toggle-group">
     <button class="toggle-btn active" data-layer="bg">Background Cloud</button>
     <button class="toggle-btn active" data-layer="obj-pts">Object Pts</button>
@@ -216,6 +247,47 @@ let objects   = [];         // parsed objects.json array (viewer-frame coords)
 let objMeshes = [];         // { id, pts: Points, box: LineSegments, label: CSS2DObject, billboard: Sprite }
 let bgCloud   = null;       // Three.js Points
 
+let queryHitIds = new Set();
+
+function idToKi(objectId) {
+  return objects.findIndex(o => o.id === objectId);
+}
+
+async function runVisualQuery() {
+  const q = document.getElementById('query-input').value.trim();
+  const status = document.getElementById('query-status');
+  const btn = document.getElementById('btn-query');
+  if (!q) {
+    status.textContent = '';
+    queryHitIds = new Set();
+    buildSidebar(document.getElementById('search').value || '');
+    return;
+  }
+  btn.disabled = true;
+  status.textContent = 'Searching…';
+  try {
+    const resp = await fetch('/api/query', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: q, top_k: 20 }),
+    });
+    const data = await resp.json();
+    if (!data.ok && data.error) throw new Error(data.error);
+    queryHitIds = new Set((data.results || []).map(r => r.object_index));
+    status.textContent = `${(data.results || []).length} hits`;
+    buildSidebar(document.getElementById('search').value || '');
+    const first = (data.results || [])[0];
+    if (first) {
+      const ki = idToKi(first.object_index);
+      if (ki >= 0) selectObject(ki, true);
+    }
+  } catch (err) {
+    status.textContent = 'Query failed';
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+  }
+}
 let selectedIdx   = -1;    // index into objects[]
 let isolatedIdx   = -1;    // index into objects[] for isolation mode
 let lastClickTime = 0;
@@ -430,7 +502,11 @@ function buildSidebar(filter) {
   const listEl = document.getElementById('obj-list');
   const q      = (filter || '').toLowerCase();
   const filtered = q
-    ? objects.filter(o => o.label.toLowerCase().includes(q))
+    ? objects.filter(o => {
+        const cap = (o.caption || '').toLowerCase();
+        const cat = (o.category || '').toLowerCase();
+        return o.label.toLowerCase().includes(q) || cap.includes(q) || cat.includes(q);
+      })
     : objects;
 
   document.getElementById('obj-count').textContent = filtered.length;
@@ -439,7 +515,9 @@ function buildSidebar(filter) {
   for (const obj of filtered) {
     const ki  = obj.index;
     const div = document.createElement('div');
-    div.className = 'obj-item' + (ki === selectedIdx ? ' selected' : '');
+    div.className = 'obj-item'
+      + (ki === selectedIdx ? ' selected' : '')
+      + (queryHitIds.has(obj.id) ? ' query-hit' : '');
     div.dataset.ki = ki;
 
     // Swatch
@@ -465,7 +543,7 @@ function buildSidebar(filter) {
     info.className = 'obj-info';
     const lbl = document.createElement('div');
     lbl.className = 'obj-label';
-    lbl.textContent = obj.label;
+    lbl.textContent = obj.caption || obj.label;
     const meta = document.createElement('div');
     meta.className = 'obj-meta';
     meta.textContent = `id:${obj.id} · ${obj.n_pts}pts`;
@@ -519,12 +597,18 @@ function showDetail(ki) {
   const obj = objects[ki];
   const panel = document.getElementById('detail');
   panel.classList.add('visible');
-  document.getElementById('detail-title').textContent = `${obj.label}  (id: ${obj.id})`;
+  document.getElementById('detail-title').textContent =
+    obj.caption ? `${obj.caption}` : `${obj.label}  (id: ${obj.id})`;
   const m = obj.mean;
-  document.getElementById('detail-meta').innerHTML =
+  let metaHtml =
     `<b>XYZ:</b> ${m[0].toFixed(2)}, ${m[1].toFixed(2)}, ${m[2].toFixed(2)} m &nbsp;·&nbsp; ` +
     `<b>Stella pts:</b> ${obj.n_pts} &nbsp;·&nbsp; ` +
-    `<b>Class id:</b> ${obj.class_id}`;
+    `<b>Class:</b> ${obj.label}`;
+  if (obj.category) metaHtml += `<br/><b>Category:</b> ${obj.category}`;
+  if (obj.attributes && obj.attributes.length) {
+    metaHtml += `<br/><b>Attrs:</b> ${obj.attributes.join(', ')}`;
+  }
+  document.getElementById('detail-meta').innerHTML = metaHtml;
 
   const votesEl = document.getElementById('detail-votes');
   if (obj.vote_summary && Object.keys(obj.vote_summary).length) {
@@ -641,6 +725,11 @@ document.getElementById('search').addEventListener('input', e => {
   buildSidebar(e.target.value);
 });
 
+document.getElementById('btn-query').addEventListener('click', () => runVisualQuery());
+document.getElementById('query-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') runVisualQuery();
+});
+
 document.getElementById('detail-close').addEventListener('click', () => {
   hideDetail();
   selectObject(-1, false);
@@ -683,10 +772,124 @@ function centreCamera(objects) {
   controls.update();
 }
 
+function disposeObject3D(obj) {
+  if (!obj) return;
+  scene.remove(obj);
+  if (obj.geometry) obj.geometry.dispose();
+  if (obj.material) {
+    const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+    for (const m of mats) {
+      if (m.map) m.map.dispose();
+      m.dispose();
+    }
+  }
+}
+
+function clearSceneContent({ keepCamera = true } = {}) {
+  selectedIdx = -1;
+  isolatedIdx = -1;
+  document.getElementById('detail').classList.remove('visible');
+  document.getElementById('isolation-badge').style.display = 'none';
+  for (const m of objMeshes) {
+    disposeObject3D(m.pts);
+    disposeObject3D(m.box);
+    disposeObject3D(m.billboard);
+    if (m.label) scene.remove(m.label);
+  }
+  objMeshes = [];
+  objects = [];
+  if (bgCloud) {
+    disposeObject3D(bgCloud);
+    bgCloud = null;
+  }
+  document.getElementById('obj-list').innerHTML = '';
+  if (!keepCamera) { /* reserved */ }
+}
+
+let selectedExperimentId = null;
+let experimentListReady = false;
+let sceneLoading = false;
+
+async function loadExperimentList(preferId) {
+  const sel = document.getElementById('inp-experiment');
+  const wrap = document.getElementById('exp-wrap');
+  let data;
+  try {
+    data = await (await fetch('api/experiments')).json();
+  } catch {
+    wrap.style.display = 'none';
+    return;
+  }
+  const exps = data.experiments || [];
+  if (!exps.length) {
+    wrap.style.display = 'none';
+    return;
+  }
+  wrap.style.display = 'flex';
+  const prev = preferId || selectedExperimentId || data.current_experiment_id || '';
+  sel.innerHTML = '';
+  for (const e of exps) {
+    const opt = document.createElement('option');
+    opt.value = e.id;
+    const n = (e.n_active != null) ? ` · ${e.n_active}` : '';
+    opt.textContent = `${e.label}${n}`;
+    opt.title = e.note || '';
+    sel.appendChild(opt);
+  }
+  if (prev && [...sel.options].some(o => o.value === prev)) sel.value = prev;
+  else if (data.current_experiment_id) sel.value = data.current_experiment_id;
+  selectedExperimentId = sel.value;
+  const cur = exps.find(e => e.id === selectedExperimentId);
+  document.getElementById('exp-note').textContent = cur ? (cur.note || '') : '';
+  // Delta badge vs baseline
+  const base = exps.find(e => e.kind === 'baseline') || exps[0];
+  const deltaEl = document.getElementById('exp-delta');
+  if (cur && base && cur.n_active != null && base.n_active != null) {
+    const d = cur.n_active - base.n_active;
+    if (d === 0) {
+      deltaEl.textContent = `${cur.n_active} objs (baseline)`;
+      deltaEl.className = 'neutral';
+    } else {
+      const pct = ((d / base.n_active) * 100).toFixed(1);
+      deltaEl.textContent = `${cur.n_active} objs (${d > 0 ? '+' : ''}${d}, ${pct}%)`;
+      deltaEl.className = d < 0 ? '' : 'worse';
+    }
+  } else {
+    deltaEl.textContent = '—';
+    deltaEl.className = 'neutral';
+  }
+  experimentListReady = true;
+}
+
+async function switchExperiment(expId) {
+  if (!expId || sceneLoading) return;
+  sceneLoading = true;
+  selectedExperimentId = expId;
+  document.getElementById('loading-bar').style.display = 'block';
+  setProgress(5);
+  document.getElementById('stats').textContent = 'Switching…';
+  try {
+    await fetch(`api/switch?experiment_id=${encodeURIComponent(expId)}`);
+    await loadExperimentList(expId);
+    clearSceneContent();
+    await boot({ recentre: true });
+  } catch (err) {
+    console.error('[viewer] switch failed:', err);
+    document.getElementById('stats').textContent = 'Switch failed — check console';
+  } finally {
+    sceneLoading = false;
+  }
+}
+
+document.getElementById('inp-experiment').onchange = (e) => {
+  switchExperiment(e.target.value);
+};
+
 // ─── Boot ─────────────────────────────────────────────────────────────────────
-async function boot() {
+async function boot({ recentre = true } = {}) {
   try {
     setProgress(5);
+    document.getElementById('loading-bar').style.display = 'block';
 
     // 1. metadata
     const metaResp = await fetch('metadata.json');
@@ -706,14 +909,14 @@ async function boot() {
     setProgress(90);
 
     // 4. Sidebar
-    buildSidebar('');
+    buildSidebar(document.getElementById('search').value || '');
     setProgress(100);
 
     // 5. Camera
-    centreCamera(objects);
+    if (recentre) centreCamera(objects);
 
     // 6. Hide loading bar
-    setTimeout(() => { document.getElementById('loading-bar').style.display = 'none'; }, 600);
+    setTimeout(() => { document.getElementById('loading-bar').style.display = 'none'; }, 400);
 
     console.log('[viewer] Ready');
   } catch(err) {
@@ -722,7 +925,10 @@ async function boot() {
   }
 }
 
-boot();
+(async () => {
+  await loadExperimentList();
+  await boot({ recentre: true });
+})();
 </script>
 </body>
 </html>

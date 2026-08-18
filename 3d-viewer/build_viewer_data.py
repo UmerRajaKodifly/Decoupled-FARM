@@ -197,8 +197,10 @@ def main() -> int:
     # Auto-resolve inputs
     if args.stella_state is None:
         for cand in [
-            run_dir / "phase3.5" / "scene_state_stella.pt",
+            run_dir / "phase4" / "scene_state_enriched.pt",
+            run_dir / "phase4" / "scene_state_captioned.pt",
             run_dir / "phase4" / "scene_state_with_crops.pt",
+            run_dir / "phase3.5" / "scene_state_stella.pt",
             run_dir / "phase3" / "scene_state.pt",
         ]:
             if cand.is_file():
@@ -397,6 +399,12 @@ def main() -> int:
                 for c, w in ranked
             }
 
+        captions = ss.get("object_caption") or []
+        categories = ss.get("object_category") or []
+        supercats = ss.get("object_supercategory") or []
+        attrs = ss.get("object_key_attributes") or []
+        decisions = ss.get("object_caption_decision") or []
+
         objects_list.append({
             "id": int(ai),
             "index": ki,
@@ -410,6 +418,11 @@ def main() -> int:
             "pts_b64": pts_b64,
             "crop_rel": crop_rel,
             "vote_summary": vote_summary,
+            "caption": str(captions[ai] if ai < len(captions) else ""),
+            "category": str(categories[ai] if ai < len(categories) else ""),
+            "supercategory": str(supercats[ai] if ai < len(supercats) else ""),
+            "attributes": list(attrs[ai] if ai < len(attrs) and attrs[ai] else []),
+            "caption_decision": str(decisions[ai] if ai < len(decisions) else ""),
         })
 
     print(f"[build] Objects with Stella pts: {n_with_pts}/{n_active}")
@@ -427,9 +440,21 @@ def main() -> int:
         n_crops = len(list(crops_out_dir.glob("*.jpg")))
         print(f"[build] Crops copied: {n_crops} files → {crops_out_dir}")
 
+    # Copy query index if Track B produced one
+    for qi_src in [
+        args.stella_state.parent / "query_index.json",
+        run_dir / "phase4" / "query_index.json",
+    ]:
+        if qi_src.is_file():
+            shutil.copy2(qi_src, args.output_dir / "query_index.json")
+            print(f"[build] query_index.json copied from {qi_src}")
+            break
+
     # ------------------------------------------------------------------
     # Write metadata.json
     # ------------------------------------------------------------------
+    has_query_index = (args.output_dir / "query_index.json").is_file()
+    n_captioned = sum(1 for o in objects_list if o.get("caption"))
     meta = {
         "n_objects_total": n_total,
         "n_objects_active": n_active,
@@ -445,6 +470,8 @@ def main() -> int:
         "has_bg_cloud": n_bg > 0,
         "bg_cloud_file": "bg_cloud.bin" if n_bg > 0 else None,
         "objects_file": "objects.json",
+        "has_query_index": has_query_index,
+        "n_captioned": n_captioned,
     }
     (args.output_dir / "metadata.json").write_text(
         json.dumps(meta, indent=2), encoding="utf-8"
