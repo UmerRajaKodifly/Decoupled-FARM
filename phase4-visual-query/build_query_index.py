@@ -8,7 +8,7 @@ from typing import List
 
 import torch
 
-from scene_io import ensure_caption_fields, is_active, object_count
+from scene_io import REAL_EMBED_MIN_DIM, ensure_caption_fields, is_active, object_count
 
 
 def build_query_index(
@@ -27,7 +27,7 @@ def build_query_index(
         if decision == "drop":
             continue
         emb = scene_state["object_caption_embedding"][i]
-        if not isinstance(emb, list) or len(emb) < 8:
+        if not isinstance(emb, list) or len(emb) < REAL_EMBED_MIN_DIM:
             continue
         cid = -1
         cids = scene_state.get("class_ids")

@@ -10,7 +10,7 @@ import numpy as np
 import torch
 
 from query_parser import Predicate, QueryGraph
-from scene_io import is_active, object_count
+from scene_io import REAL_EMBED_MIN_DIM, is_active, object_count
 
 
 @dataclass
@@ -77,7 +77,7 @@ def _semantic_scores(
         if i < len(decisions) and str(decisions[i]) == "drop":
             continue
         vec = embs[i] if i < len(embs) else []
-        if not isinstance(vec, list) or len(vec) < 8:
+        if not isinstance(vec, list) or len(vec) < REAL_EMBED_MIN_DIM:
             continue
         s = _cosine(query_vec, np.asarray(vec, dtype=np.float64))
         if tc:

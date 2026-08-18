@@ -75,11 +75,10 @@ class _Handler(BaseHTTPRequestHandler):
             self._json(400, {"ok": False, "error": "missing q"})
             return
         top_k = int((qs.get("top_k") or ["15"])[0])
-        mock = (qs.get("mock") or ["0"])[0] in {"1", "true", "yes"}
         try:
             from query_api import search
 
-            payload = search(self.data_dir, q, top_k=top_k, mock=mock)
+            payload = search(self.data_dir, q, top_k=top_k)
             payload["ok"] = True
             self._json(200, payload)
         except Exception as exc:
@@ -98,11 +97,10 @@ class _Handler(BaseHTTPRequestHandler):
             self._json(400, {"ok": False, "error": "missing query"})
             return
         top_k = int(data.get("top_k") or 15)
-        mock = bool(data.get("mock"))
         try:
             from query_api import search
 
-            payload = search(self.data_dir, q, top_k=top_k, mock=mock)
+            payload = search(self.data_dir, q, top_k=top_k)
             payload["ok"] = True
             self._json(200, payload)
         except Exception as exc:

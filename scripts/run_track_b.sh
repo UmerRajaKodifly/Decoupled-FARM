@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # Track B — Gemini captioning → embeddings → query index → viewer rebuild
 #
-# Runs on the HOST (needs GOOGLE_API_KEY or use MOCK=1 for offline smoke test).
+# Runs on the HOST. Requires GOOGLE_API_KEY or GEMINI_API_KEY.
 # Expects Phase 4a complete: scene_state_with_crops.pt + phase1.5/faces/ + crops/ fallback
 #
 # Usage:
 #   export GOOGLE_API_KEY=...
 #   bash scripts/run_track_b.sh
 #
-#   MOCK=1 MAX_OBJECTS=50 bash scripts/run_track_b.sh   # offline dev
+#   MAX_OBJECTS=5 bash scripts/run_track_b.sh   # paid probe
 #   RUN_DIR=outputs/runs/run_XXXX bash scripts/run_track_b.sh
 
 set -euo pipefail
@@ -23,9 +23,8 @@ VIEWER_OUT="${VIEWER_OUT:-${RUN_DIR}/validation/3d-viewer-trackb}"
 VOCAB="${ROOT}/vocab/construction_vocab.txt"
 
 SCENE_IN="${SCENE_IN:-${PHASE4}/scene_state_with_crops.pt}"
-MOCK="${MOCK:-0}"
 MAX_OBJECTS="${MAX_OBJECTS:-0}"
-CAPTION_MODEL="${CAPTION_MODEL:-gemini-3.0-flash}"
+CAPTION_MODEL="${CAPTION_MODEL:-gemini-3-flash-preview}"
 EMBED_MODEL="${EMBED_MODEL:-text-embedding-004}"
 
 ts() { date -Iseconds; }
@@ -35,13 +34,15 @@ if [[ ! -f "${SCENE_IN}" ]]; then
   exit 2
 fi
 
+if [[ -z "${GOOGLE_API_KEY:-}" && -z "${GEMINI_API_KEY:-}" ]]; then
+  echo "[track-b] ERROR: export GOOGLE_API_KEY (or GEMINI_API_KEY)"
+  exit 2
+fi
+
 mkdir -p "${PHASE4}"
 
 echo "[$(ts)] [track-b] Installing phase4-visual-query deps …"
 pip install -q -r "${P4Q}/requirements.txt"
-
-MOCK_FLAG=()
-[[ "${MOCK}" == "1" ]] && MOCK_FLAG=(--mock)
 
 MAX_FLAG=()
 [[ "${MAX_OBJECTS}" != "0" ]] && MAX_FLAG=(--max-objects "${MAX_OBJECTS}")
@@ -59,16 +60,19 @@ python -u "${P4Q}/run_phase4b_caption.py" \
   --cache-dir "${PHASE4}/gemini_cache" \
   --caption-model "${CAPTION_MODEL}" \
   "${FACES_FLAG[@]}" \
-  "${MOCK_FLAG[@]}" \
   "${MAX_FLAG[@]}"
+
+if [[ ! -f "${PHASE4}/scene_state_captioned.pt" ]]; then
+  echo "[track-b] ERROR: Phase 4b did not write scene_state_captioned.pt"
+  exit 2
+fi
 
 echo "[$(ts)] [track-b] Phase 4c — embeddings …"
 python -u "${P4Q}/run_phase4c_embed.py" \
   --scene-state "${PHASE4}/scene_state_captioned.pt" \
   --output-dir "${PHASE4}" \
   --cache-dir "${PHASE4}/gemini_cache" \
-  --embed-model "${EMBED_MODEL}" \
-  "${MOCK_FLAG[@]}"
+  --embed-model "${EMBED_MODEL}"
 
 echo "[$(ts)] [track-b] Phase 4d — post-caption merge …"
 python -u "${P4Q}/run_phase4d_merge.py" \
@@ -110,7 +114,7 @@ echo "  Query index:      ${PHASE4}/query_index.json"
 echo "  Viewer data:      ${VIEWER_OUT}/"
 echo ""
 echo "  CLI query:"
-echo "    python ${P4Q}/run_query.py \"shipping container\" --scene-state ${SCENE_QUERY} ${MOCK_FLAG[*]}"
+echo "    python ${P4Q}/run_query.py \"shipping container\" --scene-state ${SCENE_QUERY}"
 echo ""
 echo "  Viewer:"
 echo "    python ${ROOT}/3d-viewer/serve.py --data-dir ${VIEWER_OUT} --port 8090"

@@ -782,7 +782,7 @@ Batch port of FARM `_maybe_apply_caption_merges` + `_merge_objects_if_needed`:
 
 Env vars match FARM (`CAPTION_MERGE_*`). Visual threshold also accepts legacy `CAPTION_MERGE_SIGLIP2_THRESH` as fallback default for DINO.
 
-With mock captions (deterministic pseudo-embeddings), default thresholds correctly propose **zero** merges. Real Gemini embeddings are required for meaningful 4d cleanup.
+Real Gemini caption embeddings are required for meaningful 4d cleanup.
 
 ```bash
 python phase4-visual-query/run_phase4d_merge.py \

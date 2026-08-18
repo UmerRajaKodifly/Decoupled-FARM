@@ -41,8 +41,8 @@ def _safe_json(text: str) -> dict:
     return {}
 
 
-def parse_query(query: str, *, client: Optional[GeminiClient] = None, mock: bool = False) -> QueryGraph:
-    gem = client or GeminiClient(mock=mock)
+def parse_query(query: str, *, client: Optional[GeminiClient] = None) -> QueryGraph:
+    gem = client or GeminiClient()
     raw = gem.parse_json_text(system=QUERY_PARSER_SYSTEM, user=build_query_user_prompt(query))
     obj = _safe_json(raw)
 

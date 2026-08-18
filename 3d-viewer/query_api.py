@@ -50,31 +50,36 @@ def _keyword_score(query: str, obj: dict) -> float:
     return hits / len(tokens)
 
 
-def _embed_query(text: str, *, mock: bool = False) -> Optional[np.ndarray]:
+def _embed_query(text: str) -> Optional[np.ndarray]:
     try:
         from gemini_client import GeminiClient
 
-        client = GeminiClient(mock=mock)
+        client = GeminiClient()
         vecs = client.embed_texts([text])
         if vecs and vecs[0]:
             return np.asarray(vecs[0], dtype=np.float64)
-    except Exception:
-        pass
+    except Exception as exc:
+        import logging
+
+        logging.getLogger("query_api").warning("Query embedding failed, falling back to keywords: %s", exc)
     return None
 
 
-def _parse_query_simple(query: str, *, mock: bool = False) -> dict:
+def _parse_query_simple(query: str) -> dict:
     try:
         from query_parser import parse_query
 
-        qg = parse_query(query, mock=mock)
+        qg = parse_query(query)
         return {
             "target_description": qg.target_description,
             "target_class": qg.target_class,
             "predicates": [{"name": p.name, "args": p.args} for p in qg.predicates],
             "reasoning": qg.reasoning,
         }
-    except Exception:
+    except Exception as exc:
+        import logging
+
+        logging.getLogger("query_api").warning("Query parse failed, using raw string: %s", exc)
         return {"target_description": query, "target_class": None, "predicates": [], "reasoning": ""}
 
 
@@ -116,7 +121,6 @@ def search(
     query: str,
     *,
     top_k: int = 15,
-    mock: bool = False,
 ) -> dict:
     index = _load_index(data_dir)
     objects: List[dict] = list(index.get("objects") or [])
@@ -127,9 +131,9 @@ def search(
             "results": [],
         }
 
-    parsed = _parse_query_simple(query, mock=mock)
+    parsed = _parse_query_simple(query)
     target = str(parsed.get("target_description") or query)
-    q_vec = _embed_query(target, mock=mock)
+    q_vec = _embed_query(target)
 
     # Resolve anchors by keyword
     anchors: Dict[str, dict] = {}
@@ -185,6 +189,5 @@ def search(
         "query": query,
         "parsed": parsed,
         "n_indexed": len(objects),
-        "mock": mock,
         "results": hits[:top_k],
     }

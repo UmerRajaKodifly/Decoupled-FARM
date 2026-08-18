@@ -20,6 +20,9 @@ from scene_graph.captioning.structured import StructuredCaption, parse_structure
 
 _OBJ_CROP_RE = re.compile(r"obj_(\d+)_o\d+\.jpg$", re.I)
 
+# text-embedding-004 is 768-d; leftover mock vectors were 64-d.
+REAL_EMBED_MIN_DIM = 128
+
 
 def object_count(scene_state: dict) -> int:
     means = scene_state.get("means")
@@ -164,14 +167,17 @@ def _bbox_for_object(scene_state: dict, idx: int) -> Optional[Tuple[float, float
     return None
 
 
-def _image_size(path: Path) -> Tuple[int, int]:
+def _image_size(path: Path) -> Optional[Tuple[int, int]]:
     try:
         from PIL import Image
 
         with Image.open(path) as im:
-            return int(im.size[0]), int(im.size[1])
+            w, h = int(im.size[0]), int(im.size[1])
+            if w > 0 and h > 0:
+                return w, h
     except Exception:
-        return 504, 504
+        return None
+    return None
 
 
 def face_view_for_object(
@@ -189,7 +195,10 @@ def face_view_for_object(
     if idx < len(rgb_paths) and rgb_paths[idx]:
         resolved = _resolve_face_path(str(rgb_paths[idx]), faces_dir=faces_dir)
         if resolved is not None and bbox is not None:
-            w, h = _image_size(resolved)
+            size = _image_size(resolved)
+            if size is None:
+                return None
+            w, h = size
             return FaceView(resolved, bbox, w, h)
 
     obs = scene_state.get("rgb_observations") or []
@@ -206,7 +215,10 @@ def face_view_for_object(
                             if isinstance(raw_bb, (list, tuple)) and len(raw_bb) == 4:
                                 bb = (float(raw_bb[0]), float(raw_bb[1]), float(raw_bb[2]), float(raw_bb[3]))
                         if bb is not None:
-                            w, h = _image_size(resolved)
+                            size = _image_size(resolved)
+                            if size is None:
+                                return None
+                            w, h = size
                             return FaceView(resolved, bb, w, h)
     return None
 
@@ -245,6 +257,64 @@ def crop_path_for_object(
     return None
 
 
+_CAPTION_OVERLAY_KEYS = (
+    "object_caption",
+    "object_category",
+    "object_supercategory",
+    "object_key_attributes",
+    "object_caption_decision",
+    "object_category_candidates",
+)
+
+
+def caption_checkpoint_is_mock(scene_state: dict) -> bool:
+    """True if a checkpoint looks like MOCK=1 output (must not resume into a paid run)."""
+    for cap in scene_state.get("object_caption") or []:
+        if isinstance(cap, str) and "mock caption" in cap.lower():
+            return True
+    for attrs in scene_state.get("object_key_attributes") or []:
+        if isinstance(attrs, list) and any(str(a).lower() == "mock" for a in attrs):
+            return True
+    return False
+
+
+def overlay_captions(dst: dict, src: dict) -> int:
+    """Copy keep/drop captions from a checkpoint onto dst. Returns how many objects were filled."""
+    ensure_caption_fields(dst)
+    ensure_caption_fields(src)
+    n = min(object_count(dst), object_count(src))
+    copied = 0
+    for i in range(n):
+        decision = str((src.get("object_caption_decision") or [""])[i] or "")
+        if decision not in {"keep", "drop"}:
+            continue
+        for key in _CAPTION_OVERLAY_KEYS:
+            dst_list = dst.get(key)
+            src_list = src.get(key)
+            if isinstance(dst_list, list) and isinstance(src_list, list) and i < len(src_list):
+                val = src_list[i]
+                dst_list[i] = list(val) if isinstance(val, list) else val
+        copied += 1
+    return copied
+
+
+def overlay_embeddings(dst: dict, src: dict, *, min_dim: int = REAL_EMBED_MIN_DIM) -> int:
+    """Copy real caption embeddings from a checkpoint. Skips short leftover mock vectors."""
+    ensure_caption_fields(dst)
+    ensure_caption_fields(src)
+    n = min(object_count(dst), object_count(src))
+    copied = 0
+    src_emb = src.get("object_caption_embedding") or []
+    dst_emb = dst["object_caption_embedding"]
+    for i in range(n):
+        vec = src_emb[i] if i < len(src_emb) else None
+        if not isinstance(vec, list) or len(vec) < min_dim:
+            continue
+        dst_emb[i] = [float(x) for x in vec]
+        copied += 1
+    return copied
+
+
 def write_caption(
     scene_state: dict,
     idx: int,
@@ -257,7 +327,10 @@ def write_caption(
     if idx < 0 or idx >= n:
         return
 
-    decision = parsed.decision or ("keep" if parsed.is_clear_object else "drop")
+    decision = parsed.decision if parsed.decision in {"keep", "drop"} else None
+    if decision is None:
+        return
+
     scene_state["object_caption_decision"][idx] = decision
 
     if decision == "drop" or not parsed.is_clear_object:

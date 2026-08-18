@@ -35,7 +35,7 @@ from scene_graph.map_update.get_neighbors import (  # noqa: E402
 )
 from scene_graph.map_update.object_update import update_scene_graph_state  # noqa: E402
 
-from scene_io import ensure_caption_fields, is_active, object_count  # noqa: E402
+from scene_io import REAL_EMBED_MIN_DIM, ensure_caption_fields, is_active, object_count  # noqa: E402
 
 log = logging.getLogger("phase4d.merge")
 
@@ -232,7 +232,7 @@ def _candidate_indices(scene_state: dict) -> List[int]:
         if str(scene_state["object_caption_decision"][i] or "") != "keep":
             continue
         emb = scene_state["object_caption_embedding"][i]
-        if not isinstance(emb, list) or len(emb) < 8:
+        if not isinstance(emb, list) or len(emb) < REAL_EMBED_MIN_DIM:
             continue
         out.append(i)
     return out

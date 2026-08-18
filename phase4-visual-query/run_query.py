@@ -32,7 +32,6 @@ def main() -> int:
     p.add_argument("--scene-state", type=Path, default=None)
     p.add_argument("--vocab-file", type=Path, default=repo / "vocab" / "construction_vocab.txt")
     p.add_argument("--top-k", type=int, default=10)
-    p.add_argument("--mock", action="store_true")
     p.add_argument("--json-out", type=Path, default=None)
     args = p.parse_args()
 
@@ -53,9 +52,9 @@ def main() -> int:
 
     ss = load_scene(args.scene_state)
     vocab = load_vocab(args.vocab_file)
-    client = GeminiClient(mock=args.mock)
+    client = GeminiClient()
 
-    qg = parse_query(args.query, client=client, mock=args.mock)
+    qg = parse_query(args.query, client=client)
     q_vecs = client.embed_texts([qg.target_description])
     q_vec = np.asarray(q_vecs[0], dtype=np.float64)
 
