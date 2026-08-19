@@ -1,0 +1,6 @@
+# GPU driver on this box is CUDA 12.9. vLLM >=0.26 wheels need CUDA 13.
+# Install: uv pip install --python .venv/bin/python --torch-backend cu128 -r requirements.txt
+vllm==0.14.0
+pillow
+huggingface_hub
+hf_transfer

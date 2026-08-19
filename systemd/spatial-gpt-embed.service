@@ -1,0 +1,18 @@
+[Unit]
+Description=spatial-gpt text embedder (Qwen3-Embedding-0.6B)
+After=network-online.target
+# Bind is 100.109.254.4; if NetBird is down this unit restarts until wt0 exists.
+
+[Service]
+Type=simple
+WorkingDirectory=/home/kodifly/spatial-gpt
+Environment=CUDA_VISIBLE_DEVICES=0
+Environment=PYTHONUNBUFFERED=1
+Environment=HF_HUB_ENABLE_HF_TRANSFER=1
+ExecStart=/home/kodifly/spatial-gpt/scripts/serve_embed.sh
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=600
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,8 @@
+NEW INPUT:
+INPUT VIEWS: 1 full perspective view of the construction site.
+Image size: {width}×{height} pixels.
+TARGET BOUNDING BOX: {bbox_tag}
+Identify the target object inside the bounding box on this construction site.
+Preferred site vocabulary (when confident): {vocab_hint}
+
+Return the strict JSON object only.

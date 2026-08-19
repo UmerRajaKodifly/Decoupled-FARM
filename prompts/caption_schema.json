@@ -1,0 +1,37 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "category",
+    "supercategory",
+    "attributes",
+    "description",
+    "decision"
+  ],
+  "properties": {
+    "category": {
+      "type": "string",
+      "description": "Short singular object category, or 'unknown' if dropped."
+    },
+    "supercategory": {
+      "type": "string",
+      "description": "One of: heavy equipment, temporary works, container, vehicle, structure, material, PPE, tool, fixture, signage, vegetation, safety equipment, other, unknown."
+    },
+    "attributes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 0,
+      "maxItems": 5,
+      "description": "Visible attributes only: color, material, shape, condition, markings."
+    },
+    "description": {
+      "type": "string",
+      "description": "One short phrase describing the target object. Empty string if dropped."
+    },
+    "decision": {
+      "type": "string",
+      "enum": ["keep", "drop"],
+      "description": "Whether this detection is usable for object captioning and site search."
+    }
+  }
+}
