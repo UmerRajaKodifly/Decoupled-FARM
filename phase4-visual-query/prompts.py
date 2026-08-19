@@ -140,7 +140,7 @@ def build_caption_user_prompt(
     if bbox_tag:
         box_line = f"TARGET BOUNDING BOX: {bbox_tag}"
     else:
-        box_line = "TARGET BOUNDING BOX: [none; describe the main visible object in the image]."
+        box_line = "The image is cropped around the target object. Describe the main visible object in the center of the image."
 
     view_line = (
         f"INPUT VIEWS: {n_views} full perspective view of the construction site."

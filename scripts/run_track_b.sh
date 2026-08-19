@@ -1,20 +1,30 @@
 #!/usr/bin/env bash
-# Track B — Gemini captioning → embeddings → query index → viewer rebuild
+# Track B — HK vLLM captioning → embeddings → query index → viewer rebuild
 #
-# Runs on the HOST. Requires GOOGLE_API_KEY or GEMINI_API_KEY.
+# Runs on the HOST. Requires VLLM_API_KEY (and NetBird to HK).
 # Expects Phase 4a complete: scene_state_with_crops.pt + phase1.5/faces/ + crops/ fallback
 #
 # Usage:
-#   export GOOGLE_API_KEY=...
 #   bash scripts/run_track_b.sh
 #
-#   MAX_OBJECTS=5 bash scripts/run_track_b.sh   # paid probe
+#   MAX_OBJECTS=5 bash scripts/run_track_b.sh   # probe before full 7k run
 #   RUN_DIR=outputs/runs/run_XXXX bash scripts/run_track_b.sh
 
 set -euo pipefail
 
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT}"
+
+# Load secrets from .env
+for _env_file in "${ROOT}/.env" "${ROOT}/../repo/.env"; do
+  if [[ -f "${_env_file}" ]]; then
+    set -a
+    # shellcheck disable=SC1090
+    source "${_env_file}"
+    set +a
+    break
+  fi
+done
 
 P4Q="${ROOT}/phase4-visual-query"
 RUN_DIR="${RUN_DIR:-${ROOT}/outputs/latest}"
@@ -24,8 +34,8 @@ VOCAB="${ROOT}/vocab/construction_vocab.txt"
 
 SCENE_IN="${SCENE_IN:-${PHASE4}/scene_state_with_crops.pt}"
 MAX_OBJECTS="${MAX_OBJECTS:-0}"
-CAPTION_MODEL="${CAPTION_MODEL:-gemini-3-flash-preview}"
-EMBED_MODEL="${EMBED_MODEL:-text-embedding-004}"
+CAPTION_MODEL="${CAPTION_MODEL:-${VLLM_VL_MODEL:-qwen3-vl-8b}}"
+EMBED_MODEL="${EMBED_MODEL:-${VLLM_EMBED_MODEL:-qwen3-emb-0.6b}}"
 
 ts() { date -Iseconds; }
 
@@ -34,8 +44,8 @@ if [[ ! -f "${SCENE_IN}" ]]; then
   exit 2
 fi
 
-if [[ -z "${GOOGLE_API_KEY:-}" && -z "${GEMINI_API_KEY:-}" ]]; then
-  echo "[track-b] ERROR: export GOOGLE_API_KEY (or GEMINI_API_KEY)"
+if [[ -z "${VLLM_API_KEY:-}" ]]; then
+  echo "[track-b] ERROR: set VLLM_API_KEY in ${ROOT}/.env (same value as HK spatial-gpt/.env)"
   exit 2
 fi
 
@@ -52,12 +62,12 @@ if [[ -d "${RUN_DIR}/phase1.5/faces" ]]; then
   FACES_FLAG=(--faces-dir "${RUN_DIR}/phase1.5/faces")
 fi
 
-echo "[$(ts)] [track-b] Phase 4b — captioning (full face + bbox) …"
+echo "[$(ts)] [track-b] Phase 4b — captioning via HK vLLM (full face + bbox) …"
 python -u "${P4Q}/run_phase4b_caption.py" \
   --scene-state "${SCENE_IN}" \
   --output-dir "${PHASE4}" \
   --vocab-file "${VOCAB}" \
-  --cache-dir "${PHASE4}/gemini_cache" \
+  --cache-dir "${PHASE4}/vlm_cache" \
   --caption-model "${CAPTION_MODEL}" \
   "${FACES_FLAG[@]}" \
   "${MAX_FLAG[@]}"
@@ -71,7 +81,7 @@ echo "[$(ts)] [track-b] Phase 4c — embeddings …"
 python -u "${P4Q}/run_phase4c_embed.py" \
   --scene-state "${PHASE4}/scene_state_captioned.pt" \
   --output-dir "${PHASE4}" \
-  --cache-dir "${PHASE4}/gemini_cache" \
+  --cache-dir "${PHASE4}/vlm_cache" \
   --embed-model "${EMBED_MODEL}"
 
 echo "[$(ts)] [track-b] Phase 4d — post-caption merge …"

@@ -23,6 +23,17 @@ set -euo pipefail
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 cd "${ROOT}"
 
+# Load secrets / overrides from .env (local first, then repo sibling)
+for _env_file in "${ROOT}/.env" "${ROOT}/../repo/.env"; do
+  if [[ -f "${_env_file}" ]]; then
+    set -a
+    # shellcheck disable=SC1090
+    source "${_env_file}"
+    set +a
+    break
+  fi
+done
+
 # ------------------------------------------------------------------
 # Full-video default — ignore inherited MAX_KFS from the shell
 # ------------------------------------------------------------------
@@ -244,6 +255,9 @@ run_service() {
     -e RUN_PHASE35_HOST="${RUN_PHASE35_HOST}" \
     -e RUN_PHASE4_HOST="${RUN_PHASE4_HOST}" \
     -e RUN_VAL_HOST="${RUN_VAL_HOST}" \
+    -e HF_TOKEN="${HF_TOKEN:-}" \
+    -e GOOGLE_API_KEY="${GOOGLE_API_KEY:-}" \
+    -e GEMINI_API_KEY="${GEMINI_API_KEY:-}" \
     "${name}"
   t1=$(date +%s)
   echo "[$(ts)] STAGE ${name} wall_elapsed_s=$((t1-t0))" | tee -a "${MERGED}"
@@ -355,9 +369,8 @@ VOCAB="${ROOT}/vocab/construction_vocab.txt"
   echo "    python ${ROOT}/3d-viewer/serve.py --data-dir ${RUN_DIR}/validation/3d-viewer"
   echo "    # opens http://127.0.0.1:8090 automatically"
   echo ""
-  echo "  Track B — caption + visual query (host, needs GOOGLE_API_KEY):"
-  echo "    export GOOGLE_API_KEY=..."
-    echo "    bash ${ROOT}/scripts/run_track_b.sh"
+  echo "  Track B — caption + visual query (host, needs VLLM_API_KEY in .env):"
+  echo "    bash ${ROOT}/scripts/run_track_b.sh"
   echo ""
   echo "  Or rebuild viewer data manually:"
   echo "    python ${ROOT}/3d-viewer/build_viewer_data.py --output-dir ${RUN_DIR}/validation/3d-viewer"

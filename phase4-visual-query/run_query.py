@@ -17,7 +17,7 @@ if str(_HERE) not in sys.path:
 
 from build_query_index import load_vocab  # noqa: E402
 from caption import load_scene  # noqa: E402
-from gemini_client import GeminiClient  # noqa: E402
+from vlm_client import VlmClient  # noqa: E402
 from query_parser import parse_query  # noqa: E402
 from retrieval import retrieve  # noqa: E402
 
@@ -52,10 +52,10 @@ def main() -> int:
 
     ss = load_scene(args.scene_state)
     vocab = load_vocab(args.vocab_file)
-    client = GeminiClient()
+    client = VlmClient()
 
     qg = parse_query(args.query, client=client)
-    q_vecs = client.embed_texts([qg.target_description])
+    q_vecs = client.embed_texts([qg.target_description], mode="query")
     q_vec = np.asarray(q_vecs[0], dtype=np.float64)
 
     hits = retrieve(ss, qg, q_vec, vocab=vocab, top_k=args.top_k)

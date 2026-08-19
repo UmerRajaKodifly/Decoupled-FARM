@@ -15,7 +15,7 @@ if str(_HERE) not in sys.path:
 
 from caption import load_scene, save_scene  # noqa: E402
 from embed import embed_captions  # noqa: E402
-from gemini_client import GeminiClient  # noqa: E402
+from vlm_client import DEFAULT_EMBED_MODEL, VlmClient  # noqa: E402
 from scene_io import overlay_embeddings  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s", datefmt="%H:%M:%S")
@@ -40,7 +40,7 @@ def main() -> int:
     p.add_argument("--cache-dir", type=Path, default=None)
     p.add_argument("--batch-size", type=int, default=16)
     p.add_argument("--no-skip-existing", action="store_true")
-    p.add_argument("--embed-model", type=str, default="text-embedding-004")
+    p.add_argument("--embed-model", type=str, default=DEFAULT_EMBED_MODEL)
     args = p.parse_args()
 
     if not args.scene_state.is_file():
@@ -48,9 +48,9 @@ def main() -> int:
         return 2
 
     out = args.output_dir or args.scene_state.parent
-    cache = args.cache_dir or (out / "gemini_cache")
+    cache = args.cache_dir or (out / "vlm_cache")
     ss = load_scene(args.scene_state)
-    client = GeminiClient(cache_dir=cache, embed_model=args.embed_model)
+    client = VlmClient(cache_dir=cache, embed_model=args.embed_model)
 
     out_pt = out / "scene_state_enriched.pt"
     if out_pt.is_file() and not args.no_skip_existing:

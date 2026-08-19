@@ -2,7 +2,7 @@
 
 Construction-site captioning, embeddings, post-caption identity merge, and natural-language retrieval.
 
-Captioning sends **one full perspective face + TARGET BOUNDING BOX** per object (the format validated in Google AI Studio). Local VLM serving is a separate refactor; this pipeline uses Gemini (`gemini-3-flash-preview` by default).
+Captioning sends **one full perspective face + TARGET BOUNDING BOX** per object to the HK vLLM service (`Qwen3-VL-8B` on NetBird). See `docs/hk-server-setup-vlm.md`.
 
 ## Pipeline
 
@@ -21,8 +21,7 @@ Viewer               →  validation/3d-viewer-trackb/ + POST /api/query
 conda activate farm-phase2
 cd farm-object-map
 
-# After Phase 4a exists on a run:
-export GOOGLE_API_KEY=your_key
+# After Phase 4a exists on a run — set VLLM_* in Decoupled-FARM/.env first:
 bash scripts/run_track_b.sh
 
 # Paid probe (5 objects), then drop MAX_OBJECTS to resume the rest:
@@ -60,11 +59,16 @@ python 3d-viewer/serve.py --data-dir outputs/latest/validation/3d-viewer-trackb
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `GOOGLE_API_KEY` / `GEMINI_API_KEY` | — | Gemini API access (required) |
-| `MAX_OBJECTS` | 0 (all) | Limit new captions (paid probe / resume) |
-| `CAPTION_MODEL` | `gemini-3-flash-preview` | VLM for structured JSON |
+| `VLLM_API_KEY` | — | Bearer token (required; match HK `spatial-gpt/.env`) |
+| `VLLM_BASE_URL` | `http://100.109.254.4:8100/v1` | Caption / query-parse VLM |
+| `VLLM_EMBED_BASE_URL` | `http://100.109.254.4:8102/v1` | Text embedder |
+| `VLLM_VL_MODEL` | `qwen3-vl-8b` | Served caption model id |
+| `VLLM_EMBED_MODEL` | `qwen3-emb-0.6b` | Served embed model id |
+| `VLLM_DISABLE_THINKING` | `1` | Disable Qwen3 thinking tokens |
+| `MAX_OBJECTS` | 0 (all) | Limit new captions (probe / resume) |
+| `CAPTION_MODEL` | `qwen3-vl-8b` | Override caption model id |
 | `CHECKPOINT_EVERY` | `25` | Write `scene_state_captioned.pt` every N new captions |
-| `EMBED_MODEL` | `text-embedding-004` | Caption text vectors |
+| `EMBED_MODEL` | `qwen3-emb-0.6b` | Override embed model id |
 | `FAIL_FAST=1` | off | Stop the caption batch on the first API error |
 | `CAPTION_MERGE_HELLINGER_THRESH` | `0.65` | Spatial neighbour gate (Phase 4d) |
 | `CAPTION_MERGE_CAPTION_THRESH` | `0.92` | Caption cosine gate |
@@ -73,9 +77,9 @@ python 3d-viewer/serve.py --data-dir outputs/latest/validation/3d-viewer-trackb
 
 Phase 4d reuses FARM cannot-link checks and `update_scene_graph_state`. Visual similarity uses per-object DINO `features` (384-d) unless SigLIP2 embeddings are present.
 
-Live captioning checkpoints `scene_state_captioned.pt` every 25 objects (atomic temp+rename). Re-running 4b overlays that file and `skip_existing` resumes uncaptioned objects only. Parse failures are left uncaptioned so they retry. Gemini 3 thinking is pinned to `minimal` to avoid HIGH-thinking token cost. Transient API errors (429/503) are retried with backoff.
+Live captioning checkpoints `scene_state_captioned.pt` every 25 objects (atomic temp+rename). Re-running 4b overlays that file and `skip_existing` resumes uncaptioned objects only. Parse failures are left uncaptioned so they retry. Transient API errors (429/503) are retried with backoff.
 
-Responses are also cached under `phase4/gemini_cache/` keyed by model + thinking level + image + prompt. Leftover mock cache entries and mock checkpoints are ignored/refused.
+Responses are cached under `phase4/vlm_cache/` keyed by model + image + prompt. Existing Phase 4a crops and `scene_state_with_crops.pt` are never overwritten by Track B.
 
 ## Scene state fields written
 

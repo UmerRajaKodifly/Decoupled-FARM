@@ -6,7 +6,7 @@ import json
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from gemini_client import GeminiClient
+from vlm_client import VlmClient
 from prompts import QUERY_PARSER_SYSTEM, build_query_user_prompt
 
 
@@ -41,9 +41,9 @@ def _safe_json(text: str) -> dict:
     return {}
 
 
-def parse_query(query: str, *, client: Optional[GeminiClient] = None) -> QueryGraph:
-    gem = client or GeminiClient()
-    raw = gem.parse_json_text(system=QUERY_PARSER_SYSTEM, user=build_query_user_prompt(query))
+def parse_query(query: str, *, client: Optional[VlmClient] = None) -> QueryGraph:
+    vlm = client or VlmClient()
+    raw = vlm.parse_json_text(system=QUERY_PARSER_SYSTEM, user=build_query_user_prompt(query))
     obj = _safe_json(raw)
 
     target = str(obj.get("target_description") or query).strip()

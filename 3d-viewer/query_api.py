@@ -52,10 +52,10 @@ def _keyword_score(query: str, obj: dict) -> float:
 
 def _embed_query(text: str) -> Optional[np.ndarray]:
     try:
-        from gemini_client import GeminiClient
+        from vlm_client import VlmClient
 
-        client = GeminiClient()
-        vecs = client.embed_texts([text])
+        client = VlmClient()
+        vecs = client.embed_texts([text], mode="query")
         if vecs and vecs[0]:
             return np.asarray(vecs[0], dtype=np.float64)
     except Exception as exc:

@@ -1,22 +1,26 @@
-"""Phase 4b — batch VLM captioning via Gemini.
+"""Phase 4b — batch VLM captioning via HK vLLM (Qwen3-VL).
 
-Default visual input is the **full perspective face** plus a TARGET BOUNDING BOX
-(the format validated in Google AI Studio). Object crops remain a fallback.
+Sends a **padded bbox crop** (bbox + 25% context) from the best-view face to the
+VLM so it focuses on the target object rather than the whole scene.
+Phase 4a tight crops are a fallback when no face is available.
 """
 
 from __future__ import annotations
 
+import io
 import json
 import logging
 import os
+import tempfile
 import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import List, Optional
 
 import torch
+from PIL import Image
 
-from gemini_client import GeminiClient
+from vlm_client import VlmClient
 from prompts import build_caption_user_prompt, format_bbox_tag, load_vocab_hint
 from scene_io import (
     caption_checkpoint_is_mock,
@@ -36,6 +40,58 @@ log = logging.getLogger("phase4b.caption")
 
 from scene_graph.captioning.structured import parse_structured_caption  # noqa: E402
 
+_BBOX_PAD_FRAC = float(os.environ.get("BBOX_PAD_FRAC", "0.25"))
+
+
+def _crop_face_around_bbox(
+    face_path: Path,
+    bbox_xyxy: list,
+    *,
+    pad_frac: float = _BBOX_PAD_FRAC,
+    min_size: int = 128,
+) -> Optional[Path]:
+    """Crop the face image around bbox with *pad_frac* context on each side.
+
+    Returns path to a temp JPEG (caller should not delete — reused via cache).
+    Returns None if bbox or image is invalid.
+    """
+    try:
+        x1, y1, x2, y2 = (float(v) for v in bbox_xyxy[:4])
+    except (TypeError, ValueError):
+        return None
+    if x2 <= x1 or y2 <= y1:
+        return None
+
+    img = Image.open(face_path)
+    iw, ih = img.size
+
+    bw = x2 - x1
+    bh = y2 - y1
+    px = bw * pad_frac
+    py = bh * pad_frac
+
+    cx1 = max(0, int(x1 - px))
+    cy1 = max(0, int(y1 - py))
+    cx2 = min(iw, int(x2 + px))
+    cy2 = min(ih, int(y2 + py))
+
+    cw = cx2 - cx1
+    ch = cy2 - cy1
+    if cw < min_size or ch < min_size:
+        cx1 = max(0, int((x1 + x2) / 2 - min_size / 2))
+        cy1 = max(0, int((y1 + y2) / 2 - min_size / 2))
+        cx2 = min(iw, cx1 + min_size)
+        cy2 = min(ih, cy1 + min_size)
+
+    crop = img.crop((cx1, cy1, cx2, cy2))
+
+    tmp = Path(tempfile.gettempdir()) / "farm_padded_crops"
+    tmp.mkdir(parents=True, exist_ok=True)
+    out = tmp / f"{face_path.stem}_bbox_{int(x1)}_{int(y1)}_{int(x2)}_{int(y2)}.jpg"
+    if not out.exists():
+        crop.save(out, format="JPEG", quality=92)
+    return out
+
 
 @dataclass
 class CaptionJobResult:
@@ -52,7 +108,7 @@ def run_captioning(
     scene_state: dict,
     *,
     vocab_file: Optional[Path] = None,
-    client: Optional[GeminiClient] = None,
+    client: Optional[VlmClient] = None,
     max_objects: int = 0,
     only_active: bool = True,
     skip_existing: bool = True,
@@ -80,7 +136,7 @@ def run_captioning(
 
     n = object_count(scene_state)
     vocab_hint = load_vocab_hint(vocab_file)
-    gem = client or GeminiClient(cache_dir=cache_dir)
+    vlm = client or VlmClient(cache_dir=cache_dir)
     fail_fast = fail_fast or os.environ.get("FAIL_FAST", "") in {"1", "true", "yes"}
     if checkpoint_every <= 0:
         checkpoint_every = 25
@@ -90,7 +146,7 @@ def run_captioning(
         if caption_checkpoint_is_mock(prev):
             raise RuntimeError(
                 f"Refusing to resume leftover mock checkpoint {checkpoint_path}. "
-                "Delete scene_state_captioned.pt before a Gemini run."
+                "Delete scene_state_captioned.pt before a fresh VLM run."
             )
         n_overlaid = overlay_captions(scene_state, prev)
         log.info("Resumed %d captions from %s", n_overlaid, checkpoint_path)
@@ -127,23 +183,35 @@ def run_captioning(
                     scene_state_path=scene_state_path,
                 )
                 if view is not None:
-                    bbox_tag = format_bbox_tag(
-                        view.bbox_xyxy,
-                        image_width=view.image_width,
-                        image_height=view.image_height,
-                    )
-                    if bbox_tag is None:
+                    if view.bbox_xyxy is None or len(view.bbox_xyxy) != 4:
                         results.append(
                             CaptionJobResult(idx, False, error="face_missing_bbox", image_path=str(view.rgb_path))
                         )
                         continue
-                    user_prompt = build_caption_user_prompt(
-                        vocab_hint=vocab_hint,
-                        bbox_tag=bbox_tag,
-                        image_width=view.image_width,
-                        image_height=view.image_height,
-                    )
-                    image_path = view.rgb_path
+                    padded = _crop_face_around_bbox(view.rgb_path, view.bbox_xyxy)
+                    if padded is not None and padded.is_file():
+                        padded_img = Image.open(padded)
+                        pw, ph = padded_img.size
+                        user_prompt = build_caption_user_prompt(
+                            vocab_hint=vocab_hint,
+                            bbox_tag=None,
+                            image_width=pw,
+                            image_height=ph,
+                        )
+                        image_path = padded
+                    else:
+                        bbox_tag = format_bbox_tag(
+                            view.bbox_xyxy,
+                            image_width=view.image_width,
+                            image_height=view.image_height,
+                        )
+                        user_prompt = build_caption_user_prompt(
+                            vocab_hint=vocab_hint,
+                            bbox_tag=bbox_tag,
+                            image_width=view.image_width,
+                            image_height=view.image_height,
+                        )
+                        image_path = view.rgb_path
 
             if image_path is None:
                 crop = crop_path_for_object(scene_state, idx, crops_dir=crops_dir)
@@ -154,7 +222,7 @@ def run_captioning(
                 image_path = crop
 
             try:
-                raw = gem.caption_image(image_path=image_path, user_prompt=user_prompt)
+                raw = vlm.caption_image(image_path=image_path, user_prompt=user_prompt)
                 parsed = parse_structured_caption(raw)
                 if parsed.decision not in {"keep", "drop"}:
                     raise ValueError("caption JSON missing keep/drop (left uncaptioned for retry)")
@@ -188,8 +256,8 @@ def run_captioning(
         sum(1 for r in results if r.ok),
         sum(1 for r in results if not r.ok),
         time.time() - t0,
-        getattr(gem, "n_api_calls", "?"),
-        getattr(gem, "n_cache_hits", "?"),
+        getattr(vlm, "n_api_calls", "?"),
+        getattr(vlm, "n_cache_hits", "?"),
         caption_summary(scene_state),
     )
     return results

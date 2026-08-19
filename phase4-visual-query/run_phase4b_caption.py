@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Phase 4b — Gemini structured captioning on full perspective faces + bbox."""
+"""Phase 4b — structured captioning on full perspective faces + bbox (HK vLLM)."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ if str(_HERE) not in sys.path:
     sys.path.insert(0, str(_HERE))
 
 from caption import load_scene, run_captioning, save_caption_manifest, save_scene  # noqa: E402
-from gemini_client import DEFAULT_CAPTION_MODEL, GeminiClient  # noqa: E402
+from vlm_client import DEFAULT_VL_MODEL, VlmClient  # noqa: E402
 from scene_io import caption_summary  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s", datefmt="%H:%M:%S")
@@ -37,7 +37,7 @@ def _default_scene(repo: Path) -> Path:
 
 def main() -> int:
     repo = _HERE.parent
-    p = argparse.ArgumentParser(description="Phase 4b — Gemini captioning")
+    p = argparse.ArgumentParser(description="Phase 4b — VLM captioning (HK vLLM)")
     p.add_argument("--scene-state", type=Path, default=_default_scene(repo))
     p.add_argument("--output-dir", type=Path, default=None)
     p.add_argument("--vocab-file", type=Path, default=repo / "vocab" / "construction_vocab.txt")
@@ -47,7 +47,7 @@ def main() -> int:
     p.add_argument("--no-skip-existing", action="store_true")
     p.add_argument("--crops-dir", type=Path, default=None, help="Phase 4a crops/ fallback if a face is missing")
     p.add_argument("--faces-dir", type=Path, default=None, help="Phase 1.5 faces/ (default: run_dir/phase1.5/faces)")
-    p.add_argument("--caption-model", type=str, default=DEFAULT_CAPTION_MODEL)
+    p.add_argument("--caption-model", type=str, default=DEFAULT_VL_MODEL)
     p.add_argument("--fail-fast", action="store_true", help="Abort the batch on the first caption API error")
     p.add_argument("--use-crops", action="store_true", help="Send padded crops instead of full faces")
     p.add_argument("--checkpoint-every", type=int, default=25, help="Save scene_state_captioned.pt every N new captions")
@@ -67,7 +67,7 @@ def main() -> int:
 
     out = args.output_dir or args.scene_state.parent
     out.mkdir(parents=True, exist_ok=True)
-    cache = args.cache_dir or (out / "gemini_cache")
+    cache = args.cache_dir or (out / "vlm_cache")
 
     log.info("Loading %s", args.scene_state)
     ss = load_scene(args.scene_state)
@@ -80,7 +80,7 @@ def main() -> int:
             faces_dir = cand
     if faces_dir is None or not faces_dir.is_dir():
         log.warning("Faces dir not found — will fall back to crops if present")
-    client = GeminiClient(cache_dir=cache, caption_model=args.caption_model)
+    client = VlmClient(cache_dir=cache, vl_model=args.caption_model)
 
     out_pt = out / "scene_state_captioned.pt"
     results = run_captioning(
