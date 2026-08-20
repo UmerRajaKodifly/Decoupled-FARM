@@ -66,6 +66,7 @@ python 3d-viewer/serve.py --data-dir outputs/latest/validation/3d-viewer-trackb
 | `VLLM_VL_MODEL` | `qwen3-vl-8b` | Served caption model id |
 | `VLLM_EMBED_MODEL` | `qwen3-emb-0.6b` | Served embed model id |
 | `VLLM_DISABLE_THINKING` | `1` | Disable Qwen3 thinking tokens |
+| `BBOX_PAD_FRAC` | `0.1` | Extra context around the bbox crop sent to the VLM (fraction of bbox size on each side). Set in `.env`. |
 | `MAX_OBJECTS` | 0 (all) | Limit new captions (probe / resume) |
 | `CAPTION_MODEL` | `qwen3-vl-8b` | Override caption model id |
 | `CHECKPOINT_EVERY` | `25` | Write `scene_state_captioned.pt` every N new captions |

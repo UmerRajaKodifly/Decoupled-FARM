@@ -40,7 +40,7 @@ log = logging.getLogger("phase4b.caption")
 
 from scene_graph.captioning.structured import parse_structured_caption  # noqa: E402
 
-_BBOX_PAD_FRAC = float(os.environ.get("BBOX_PAD_FRAC", "0.25"))
+_BBOX_PAD_FRAC = float(os.environ.get("BBOX_PAD_FRAC", "0.1"))
 
 
 def _crop_face_around_bbox(
