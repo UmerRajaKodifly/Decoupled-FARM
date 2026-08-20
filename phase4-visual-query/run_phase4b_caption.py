@@ -97,6 +97,7 @@ def main() -> int:
         use_full_face=not args.use_crops,
         checkpoint_path=out_pt,
         checkpoint_every=args.checkpoint_every,
+        padded_crops_dir=out / "padded_crops",
     )
 
     save_scene(out_pt, ss)

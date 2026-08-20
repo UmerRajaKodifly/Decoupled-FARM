@@ -12,6 +12,7 @@ Phase 4b (caption)   →  scene_state_captioned.pt
 Phase 4c (embed)     →  scene_state_enriched.pt
 Phase 4d (merge)     →  scene_state_merged.pt
 Query index          →  query_index.json
+Caption review       →  validation/caption_review.html
 Viewer               →  validation/3d-viewer-trackb/ + POST /api/query
 ```
 

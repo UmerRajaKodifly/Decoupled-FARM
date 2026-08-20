@@ -28,8 +28,18 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#111;color:#e0e0e0;h
 }
 #btn-query:disabled{opacity:0.5;cursor:default}
 #query-status{font-size:10px;color:#6a8a6a;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#mean-input{
+  padding:4px 10px;border-radius:5px;border:1px solid #3a4a6a;background:#1a1a2a;
+  color:#ddd;font-size:12px;width:210px
+}
+#btn-mean{
+  padding:4px 12px;border-radius:5px;border:1px solid #4a6a8a;background:#2a3a4a;
+  color:#cde;font-size:11px;cursor:pointer
+}
+#mean-status{font-size:10px;color:#6a8aaa;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .obj-item.query-hit{border-left-color:#6a8a4a;background:#1a221a}
 #search::placeholder{color:#666}
+#mean-input::placeholder{color:#666}
 .toggle-group{display:flex;gap:6px;flex-wrap:wrap}
 .toggle-btn{
   padding:3px 10px;border-radius:4px;border:1px solid #444;background:#252525;
@@ -153,6 +163,9 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#111;color:#e0e0e0;h
   <input id="query-input" type="text" placeholder="Visual query (e.g. shipping container)"/>
   <button id="btn-query" type="button">Search</button>
   <span id="query-status"></span>
+  <input id="mean-input" type="text" placeholder="3D mean x, y, z  (e.g. 21.32, -0.84, 30.96)"/>
+  <button id="btn-mean" type="button">Go to XYZ</button>
+  <span id="mean-status"></span>
   <div class="toggle-group">
     <button class="toggle-btn active" data-layer="bg">Background Cloud</button>
     <button class="toggle-btn active" data-layer="obj-pts">Object Pts</button>
@@ -248,9 +261,75 @@ let objMeshes = [];         // { id, pts: Points, box: LineSegments, label: CSS2
 let bgCloud   = null;       // Three.js Points
 
 let queryHitIds = new Set();
+let meanMarker  = null;     // Three.js Group dropped at a pasted XYZ
 
 function idToKi(objectId) {
   return objects.findIndex(o => o.id === objectId);
+}
+
+function parseMeanXYZ(text) {
+  const nums = String(text).match(/[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?/g);
+  if (!nums || nums.length < 3) return null;
+  return [parseFloat(nums[0]), parseFloat(nums[1]), parseFloat(nums[2])];
+}
+
+function placeMeanMarker(viewerXYZ) {
+  if (meanMarker) {
+    scene.remove(meanMarker);
+    meanMarker.traverse(o => {
+      if (o.geometry) o.geometry.dispose();
+      if (o.material) o.material.dispose();
+    });
+    meanMarker = null;
+  }
+  const g = new THREE.Group();
+  const sph = new THREE.Mesh(
+    new THREE.SphereGeometry(0.25, 16, 12),
+    new THREE.MeshBasicMaterial({ color: 0xffdd44 })
+  );
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(0.35, 0.55, 24),
+    new THREE.MeshBasicMaterial({ color: 0xffdd44, side: THREE.DoubleSide, transparent: true, opacity: 0.85 })
+  );
+  ring.rotation.x = -Math.PI / 2;
+  const axes = new THREE.AxesHelper(1.5);
+  g.add(sph, ring, axes);
+  g.position.set(viewerXYZ[0], viewerXYZ[1], viewerXYZ[2]);
+  scene.add(g);
+  meanMarker = g;
+}
+
+function gotoPastedMean() {
+  const status = document.getElementById('mean-status');
+  const xyz = parseMeanXYZ(document.getElementById('mean-input').value);
+  if (!xyz) {
+    status.textContent = 'Need x, y, z  (e.g. 21.32, -0.84, 30.96)';
+    return;
+  }
+  if (!objects.length) {
+    status.textContent = 'Objects not loaded yet';
+    return;
+  }
+
+  let bestKi = -1;
+  let bestD2 = Infinity;
+  for (let i = 0; i < objects.length; i++) {
+    const m = objects[i].mean_src || objects[i].mean;
+    const dx = m[0] - xyz[0], dy = m[1] - xyz[1], dz = m[2] - xyz[2];
+    const d2 = dx * dx + dy * dy + dz * dz;
+    if (d2 < bestD2) { bestD2 = d2; bestKi = i; }
+  }
+  const dist = Math.sqrt(bestD2);
+  const viewXYZ = transformPoint(xyz);
+  placeMeanMarker(viewXYZ);
+
+  if (bestKi < 0) {
+    status.textContent = 'No objects to match';
+    return;
+  }
+  const obj = objects[bestKi];
+  status.textContent = `nearest obj ${obj.id}  (${dist.toFixed(2)} units away)`;
+  selectObject(bestKi, true);
 }
 
 async function runVisualQuery() {
@@ -442,6 +521,7 @@ async function loadObjects() {
 
   // Convert Stella/OpenCV coords → Three.js viewer frame
   for (const obj of objects) {
+    obj.mean_src = obj.mean.slice();  // original SLAM coords (caption-review HTML)
     obj.mean = transformPoint(obj.mean);
     if (obj.bbox_min && obj.bbox_max) {
       [obj.bbox_min, obj.bbox_max] = transformBbox(obj.bbox_min, obj.bbox_max);
@@ -728,6 +808,10 @@ document.getElementById('search').addEventListener('input', e => {
 document.getElementById('btn-query').addEventListener('click', () => runVisualQuery());
 document.getElementById('query-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') runVisualQuery();
+});
+document.getElementById('btn-mean').addEventListener('click', () => gotoPastedMean());
+document.getElementById('mean-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') gotoPastedMean();
 });
 
 document.getElementById('detail-close').addEventListener('click', () => {

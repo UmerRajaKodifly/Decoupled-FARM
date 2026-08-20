@@ -62,7 +62,7 @@ if [[ -d "${RUN_DIR}/phase1.5/faces" ]]; then
   FACES_FLAG=(--faces-dir "${RUN_DIR}/phase1.5/faces")
 fi
 
-echo "[$(ts)] [track-b] Phase 4b — captioning via HK vLLM (full face + bbox) …"
+echo "[$(ts)] [track-b] Phase 4b — captioning via HK vLLM (padded bbox crop) …"
 python -u "${P4Q}/run_phase4b_caption.py" \
   --scene-state "${SCENE_IN}" \
   --output-dir "${PHASE4}" \
@@ -101,6 +101,12 @@ python -u "${P4Q}/run_build_query_index.py" \
   --output "${PHASE4}/query_index.json" \
   --vocab-file "${VOCAB}"
 
+echo "[$(ts)] [track-b] Writing caption review HTML …"
+python -u "${P4Q}/build_caption_review.py" \
+  --scene-state "${SCENE_QUERY}" \
+  --vocab-file "${VOCAB}" \
+  --output "${RUN_DIR}/validation/caption_review.html"
+
 echo "[$(ts)] [track-b] Rebuilding 3D viewer data …"
 if python -u "${ROOT}/3d-viewer/build_viewer_data.py" \
   --stella-state "${SCENE_QUERY}" \
@@ -121,10 +127,14 @@ echo "[$(ts)] [track-b] DONE"
 echo "  Scene (enriched): ${PHASE4}/scene_state_enriched.pt"
 echo "  Scene (merged):   ${SCENE_MERGED}"
 echo "  Query index:      ${PHASE4}/query_index.json"
+echo "  Caption review:   ${RUN_DIR}/validation/caption_review.html"
 echo "  Viewer data:      ${VIEWER_OUT}/"
 echo ""
 echo "  CLI query:"
 echo "    python ${P4Q}/run_query.py \"shipping container\" --scene-state ${SCENE_QUERY}"
+echo ""
+echo "  Caption review:"
+echo "    xdg-open ${RUN_DIR}/validation/caption_review.html"
 echo ""
 echo "  Viewer:"
 echo "    python ${ROOT}/3d-viewer/serve.py --data-dir ${VIEWER_OUT} --port 8090"

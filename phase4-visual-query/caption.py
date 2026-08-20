@@ -49,11 +49,12 @@ def _crop_face_around_bbox(
     *,
     pad_frac: float = _BBOX_PAD_FRAC,
     min_size: int = 128,
+    out_dir: Optional[Path] = None,
 ) -> Optional[Path]:
     """Crop the face image around bbox with *pad_frac* context on each side.
 
-    Returns path to a temp JPEG (caller should not delete — reused via cache).
-    Returns None if bbox or image is invalid.
+    Writes a JPEG under *out_dir* (or /tmp/farm_padded_crops). Returns None if
+    bbox or image is invalid.
     """
     try:
         x1, y1, x2, y2 = (float(v) for v in bbox_xyxy[:4])
@@ -85,9 +86,9 @@ def _crop_face_around_bbox(
 
     crop = img.crop((cx1, cy1, cx2, cy2))
 
-    tmp = Path(tempfile.gettempdir()) / "farm_padded_crops"
-    tmp.mkdir(parents=True, exist_ok=True)
-    out = tmp / f"{face_path.stem}_bbox_{int(x1)}_{int(y1)}_{int(x2)}_{int(y2)}.jpg"
+    dest = Path(out_dir) if out_dir is not None else Path(tempfile.gettempdir()) / "farm_padded_crops"
+    dest.mkdir(parents=True, exist_ok=True)
+    out = dest / f"{face_path.stem}_bbox_{int(x1)}_{int(y1)}_{int(x2)}_{int(y2)}.jpg"
     if not out.exists():
         crop.save(out, format="JPEG", quality=92)
     return out
@@ -120,6 +121,7 @@ def run_captioning(
     use_full_face: bool = True,
     checkpoint_path: Optional[Path] = None,
     checkpoint_every: int = 25,
+    padded_crops_dir: Optional[Path] = None,
 ) -> List[CaptionJobResult]:
     ensure_caption_fields(scene_state)
     if crops_dir is not None:
@@ -188,7 +190,9 @@ def run_captioning(
                             CaptionJobResult(idx, False, error="face_missing_bbox", image_path=str(view.rgb_path))
                         )
                         continue
-                    padded = _crop_face_around_bbox(view.rgb_path, view.bbox_xyxy)
+                    padded = _crop_face_around_bbox(
+                        view.rgb_path, view.bbox_xyxy, out_dir=padded_crops_dir
+                    )
                     if padded is not None and padded.is_file():
                         padded_img = Image.open(padded)
                         pw, ph = padded_img.size
